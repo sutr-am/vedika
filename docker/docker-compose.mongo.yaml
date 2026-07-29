@@ -1,8 +1,9 @@
 services:
     mongodb:
-        build:
-            context: ..
-            dockerfile: docker/Dockerfile.mongo
+        # build:
+        #     context: ..
+        #     dockerfile: docker/Dockerfile.mongo
+        image: mongo:latest
         container_name: flash_llm_mongo
         restart: always
         ports:
