@@ -56,12 +56,13 @@ lint:
 # Automatically fix lint issues and format code
 [group('code-quality')]
 check-fix-format:
-    uv run ruff check --fix .
+    uv run ruff check --select I --fix .
     uv run ruff format
 
 # Format codebase using ruff
 [group('code-quality')]
 format:
+    uv run ruff check --select I --fix .
     uv run ruff format
 
 # ==============================================================================

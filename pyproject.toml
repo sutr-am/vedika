@@ -20,15 +20,19 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "pytest>=9.1.1",
-    "pytest-asyncio>=1.4.0",
-    "ruff>=0.16.0",
-]
+dev = ["pytest>=9.1.1", "pytest-asyncio>=1.4.0", "ruff>=0.16.0"]
 
 [tool.ruff]
 line-length = 120
 target-version = "py313"
+
+[tool.ruff.lint]
+# Add "I" to your selected rules to enable isort
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["flash_llm"] # Replaces isort's known_first_party
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

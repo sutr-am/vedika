@@ -1,16 +1,18 @@
+import uuid
+from abc import ABC
+from typing import Any, Generic, Type, TypeVar
+
 from loguru import logger
+from pydantic import UUID4, BaseModel, Field
+from pymongo import errors
+
 from flash_llm.infrastructure.db.mongo.connection import connection
 from flash_llm.settings import settings
-from typing import TypeVar, Generic, Type, Any
-from pydantic import BaseModel, UUID4, Field
-from abc import ABC
-import uuid
-from pymongo import errors
 
 T = TypeVar("T", bound="NoSQLBaseDocument")
 
 
-class NoSQLBaseDocument(BaseModel, Generic[T]):
+class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
     id: UUID4 = Field(default_factory=uuid.uuid4)
 
     def __eq__(self, other: object) -> bool:
@@ -63,7 +65,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T]):
 
     def to_mongo(self: T, **kwargs) -> dict[str, Any]:
         parsed = self.model_dump(
-            exclude_unset=kwargs.pop("exclude_unset", False), by_alias=kwargs.pop("by_alias", True), **kwargs
+            exclude_unset=kwargs.pop("exclude_unset", False),
+            by_alias=kwargs.pop("by_alias", True),
+            **kwargs,
         )
 
         if "_id" not in parsed and "id" in parsed:
