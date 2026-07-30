@@ -27,7 +27,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
         super().__init_subclass__(**kwargs)
         settings_cls = getattr(cls, "Settings", None)
         if not getattr(settings_cls, "collection_name", None):
-            raise TypeError(f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute.")
+            raise TypeError(
+                f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute."
+            )
 
     @classmethod
     def _sanitize_filters(cls, filter_options: dict[str, Any]) -> dict[str, Any]:
@@ -50,7 +52,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
         settings_cls = getattr(cls, "Settings", None)
         collection_name = getattr(settings_cls, "collection_name", None)
         if not collection_name:
-            raise TypeError(f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute.")
+            raise TypeError(
+                f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute."
+            )
         return collection_name
 
     @classmethod
@@ -92,7 +96,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
             logger.warning(f"Save was NOT acknowledge for ID = {doc_id}")
             return None
         except errors.PyMongoError:
-            logger.exception(f"Failed to save document of type {self.__class__.__name__} with ID = {doc_id}")
+            logger.exception(
+                f"Failed to save document of type {self.__class__.__name__} with ID = {doc_id}"
+            )
             return None
 
     @classmethod

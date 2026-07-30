@@ -24,7 +24,9 @@ class Settings(BaseModel):
 
         # 1. Start with base.yaml
         if not base_config_path.exists():
-            logger.warning(f"Config file not found at {base_config_path}. Defaulting to Pydantic Settings")
+            logger.warning(
+                f"Config file not found at {base_config_path}. Defaulting to Pydantic Settings"
+            )
             return cls()
         cfg = OmegaConf.load(base_config_path)
 

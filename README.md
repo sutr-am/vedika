@@ -68,3 +68,77 @@ flash_llm/
 ```
 find src -type d -exec touch {}/__init__.py \;
 ```
+
+# Architecture
+
+```mermaid
+classDiagram
+    %% ==========================================
+    %% DOMAIN LAYER (Pure Python, No DB logic)
+    %% ==========================================
+    class DocumentDomain {
+        <<abstract>>
+        + UUID id
+        + String title
+        + String content
+        + HttpUrl source_url
+        + get_word_count() int
+    }
+
+    class CodebaseDocumentDomain {
+        +String codebase_name
+        +int stars
+        +String link
+    }
+
+    class DocumentRepository {
+        <<interface>>
+        +save_codebase(doc: CodebaseDocumentDomain)
+        +get_codebase(url: String) CodebaseDocumentDomain
+    }
+
+    DocumentDomain <|-- CodebaseDocumentDomain : Inherits
+
+    %% ==========================================
+    %% INFRASTRUCTURE LAYER (MongoDB Specifics)
+    %% ==========================================
+    class NoSQLBaseDocument {
+        <<abstract>>
+        +UUID _id
+        +datetime created_at
+        +save()
+        +find()
+    }
+
+    class CodebaseDocument {
+        +String codebase_name
+        +String link
+    }
+
+    class MongoRepository {
+        +save_codebase(doc: CodebaseDocumentDomain)
+    }
+
+    NoSQLBaseDocument <|-- CodebaseDocument : Inherits
+    DocumentRepository <|.. MongoRepository : Implements Interface
+    MongoRepository ..> CodebaseDocument : Maps Domain to DB Entity
+
+    %% ==========================================
+    %% APPLICATION LAYER (Crawlers & ZenML)
+    %% ==========================================
+    class GithubCrawler {
+        -DocumentRepository repository
+        +extract(url: String, user_id: UUID)
+    }
+
+    class ZenML_FeaturePipeline {
+        -DocumentRepository repository
+        +extract_and_clean()
+    }
+
+    GithubCrawler --> DocumentRepository : Injects & Uses
+    GithubCrawler ..> CodebaseDocumentDomain : Scrapes & Creates
+
+    ZenML_FeaturePipeline --> DocumentRepository : Injects & Uses
+    ZenML_FeaturePipeline ..> CodebaseDocumentDomain : Processes
+```
