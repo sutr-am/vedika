@@ -142,3 +142,141 @@ classDiagram
     ZenML_FeaturePipeline --> DocumentRepository : Injects & Uses
     ZenML_FeaturePipeline ..> CodebaseDocumentDomain : Processes
 ```
+
+```mermaid
+classDiagram
+    %% ==========================================
+    %% DOMAIN LAYER (Layer 0: No Dependencies)
+    %% ==========================================
+    class DataCategory {
+        <<enumeration>>
+        USERS
+        CODEBASES
+        ARTICLES
+        POSTS
+    }
+
+    class UserDomain {
+        +UUID id
+        +DataCategory category
+        +str first_name
+        +str last_name
+        +Optional~str~ bio
+        +full_name() str
+    }
+
+    class DocumentDomain {
+        <<abstract>>
+        +UUID id
+        +str title
+        +DataCategory category
+        +HttpUrl source_url
+        +str platform
+        +UUID author_id
+        +str author_full_name
+        +str content
+        +word_count() int
+    }
+
+    class CodebaseDocumentDomain {
+        +DataCategory category
+        +str name
+    }
+
+    class ArticleDocumentDomain {
+        +DataCategory category
+    }
+
+    class PostDocumentDomain {
+        +DataCategory category
+        +Optional~str~ image
+    }
+
+    class DocumentRepository {
+        <<interface>>
+        +save_codebase(codebase: CodebaseDocumentDomain)
+    }
+
+    DocumentDomain <|-- CodebaseDocumentDomain
+    DocumentDomain <|-- ArticleDocumentDomain
+    DocumentDomain <|-- PostDocumentDomain
+
+    %% ==========================================
+    %% INFRASTRUCTURE LAYER (Layer 1: External Systems)
+    %% ==========================================
+    class NoSQLBaseDocument {
+        <<abstract>>
+    }
+
+    class UserDocument {
+        +str first_name
+        +str last_name
+        +full_name() str
+    }
+
+    class Document {
+        <<abstract>>
+        +str title
+        +str link
+        +str platform
+        +UUID4 author_id
+        +str author_full_name
+        +str content
+    }
+
+    class CodebaseDocument {
+        +str codebase_name
+    }
+
+    class ArticleDocument {
+    }
+
+    class PostDocument {
+        +Optional~str~ image
+    }
+
+    class MongoDocumentRepository {
+        +save_codebase(codebase: CodebaseDocumentDomain)
+    }
+
+    NoSQLBaseDocument <|-- UserDocument
+    NoSQLBaseDocument <|-- Document
+    Document <|-- CodebaseDocument
+    Document <|-- ArticleDocument
+    Document <|-- PostDocument
+
+    DocumentRepository <|.. MongoDocumentRepository : implements
+
+    %% ==========================================
+    %% APPLICATION LAYER (Layer 2: Use Cases & Crawlers)
+    %% ==========================================
+    class BaseCrawler {
+        <<abstract>>
+        +DocumentRepository repository
+        +extract(url: str, user_id: UUID4, user_full_name: str)
+    }
+
+    class GithubCrawler {
+        -tuple _ignore
+        -Github gh
+        +extract(url: str, user_id: UUID4, user_full_name: str)
+        -_parse_repo_url(url: str) tuple
+        -_should_ignore(file_path: str) bool
+        -_fetch_file_content(repo, file_path) str
+        -_build_content_string(repo, tree) str
+    }
+
+    class CrawlerDispatcher {
+        +DocumentRepository repository
+        +get_crawler(url: str) BaseCrawler
+    }
+
+    BaseCrawler <|-- GithubCrawler
+    CrawlerDispatcher --> BaseCrawler : instantiates
+    BaseCrawler --> DocumentRepository : injects
+    GithubCrawler --> CodebaseDocumentDomain : creates
+
+    %% Relationships across layers
+    UserDomain ..> DataCategory
+    DocumentDomain ..> DataCategory
+```
