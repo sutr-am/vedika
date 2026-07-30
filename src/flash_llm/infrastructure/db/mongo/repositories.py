@@ -33,7 +33,7 @@ class MongoDocumentRepository(DocumentRepository):
         db_doc = CodebaseDocument(
             title=codebase.title,
             link=str(codebase.source_url),
-            platfrom=codebase.platform,
+            platform=codebase.platform,
             author_id=codebase.author_id,
             author_full_name=codebase.author_full_name,
             content=codebase.content,
@@ -45,7 +45,7 @@ class MongoDocumentRepository(DocumentRepository):
         db_doc = ArticleDocument(
             title=article.title,
             link=str(article.source_url),
-            platfrom=article.platform,
+            platform=article.platform,
             author_id=article.author_id,
             author_full_name=article.author_full_name,
             content=article.content,
@@ -56,7 +56,7 @@ class MongoDocumentRepository(DocumentRepository):
         db_doc = PostDocument(
             title=post.title,
             link=str(post.source_url),
-            platfrom=post.platform,
+            platform=post.platform,
             author_id=post.author_id,
             author_full_name=post.author_full_name,
             content=post.content,

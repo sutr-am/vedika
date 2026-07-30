@@ -13,7 +13,7 @@ class GithubCrawler(BaseCrawler):
 
         # !TODO: Implement actual Github scrapping using PyGithub (github)
         repo_name = url.rstrip("/").split("/")[-1]
-        mock_content = f"This is a mock README content for {repo_name}"
+        mock_content = f"This is a mock README.md content for {repo_name}"
 
         # 1. Instantiate the pure Domain model
         domain_doc = CodebaseDocumentDomain(

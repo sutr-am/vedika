@@ -90,7 +90,25 @@ test-unit *args:
 test-integration *args: mongo-up
     uv run pytest -vv tests/integration {{args}}
 
+# Run ETL-related tests (spins up MongoDB for pipeline-backed tests)
+[group('testing')]
+test-run-etl *args: mongo-up
+    uv run pytest -vv tests -k "run_etl or etl" {{args}}
+
 # Run ALL tests (spins up MongoDB)
 [group('testing')]
 test-all *args: mongo-up
     uv run pytest -vv {{args}}
+
+# Run the ETL service end-to-end with MongoDB and ZenML server
+[group('services')]
+run-etl-service: mongo-up
+    # @if ! curl -sf http://127.0.0.1:8238/api/v1/info >/dev/null 2>&1; then \
+    echo "Starting ZenML server on port 8238..."; \
+    uv run zenml up --host 127.0.0.1 --port 8237 > ./tmp/zenml.log 2>&1 & \
+        # for i in 1 2 3 4 5; do \
+        #     if curl -sf http://127.0.0.1:8237/api/v1/info >/dev/null 2>&1; then break; fi; \
+        #     sleep 2; \
+        # done; \
+    # fi
+    uv run python tools/run_etl.py

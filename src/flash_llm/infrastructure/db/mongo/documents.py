@@ -27,26 +27,29 @@ class Document(NoSQLBaseDocument, ABC):
 
     title: str
     link: str
-    platfrom: str
+    platform: str
     author_id: UUID4 = Field(alias="author_id")
     author_full_name: str = Field(alias="author_full_name")
     content: str
+
+    class Settings:
+        collection_name = "_abstract_document_"
 
 
 class CodebaseDocument(Document):
     codebase_name: str
 
-    class Settings:
+    class Settings(Document.Settings):
         collection_name: DataCategory = DataCategory.CODEBASES
 
 
 class ArticleDocument(Document):
-    class Settings:
+    class Settings(Document.Settings):
         collection_name: DataCategory = DataCategory.ARTICLES
 
 
 class PostDocument(Document):
     image: Optional[str] = None
 
-    class Settings:
+    class Settings(Document.Settings):
         collection_name: DataCategory = DataCategory.POSTS

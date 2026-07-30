@@ -1,12 +1,14 @@
-from zenml import step
 from loguru import logger
-from flash_llm.domain.repositories import DocumentRepository
-from flash_llm.domain.documents import UserDomain
+from zenml import step
+
 from flash_llm.application.crawlers.dispatcher import CrawlerDispatcher
+from flash_llm.domain.documents import UserDomain
+from flash_llm.domain.repositories import DocumentRepository
 from flash_llm.infrastructure.db.factory import get_document_repository
 
+
 @step
-def get_or_create_user(user_full_name:str):
+def get_or_create_user(user_full_name: str) -> UserDomain:
     logger.info(f"retrieving or Creating user: {user_full_name}")
     first_name, last_name = user_full_name.split(" ", 1)
 
@@ -15,8 +17,9 @@ def get_or_create_user(user_full_name:str):
     user = repository.get_or_create_user(first_name=first_name, last_name=last_name)
     return user
 
+
 @step
-def crawl_links(user: UserDomain, links:list[str])-> None:
+def crawl_links(user: UserDomain, links: list[str]) -> None:
     # 1. Dynamically load the repository via the factory
     repository: DocumentRepository = get_document_repository()
 
