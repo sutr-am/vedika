@@ -27,15 +27,17 @@ class GithubCrawler(BaseCrawler):
         else:
             self.gh = Github()
 
-    def _parse_repo_url(self, url:str)-> tuple[str, str]:
-        repo_path = url.replace("https://github.com", "").replace("http://github.com", "").strip("/")
+    def _parse_repo_url(self, url: str) -> tuple[str, str]:
+        repo_path = (
+            url.replace("https://github.com", "").replace("http://github.com", "").strip("/")
+        )
         repo_name = repo_path.split("/")[-1]
         return repo_path, repo_name
 
-    def _should_ignore(self, file_path: str)-> bool:
+    def _should_ignore(self, file_path: str) -> bool:
         return any(file_path.endswith(i) or f"/{i}/" in file_path for i in self._ignore)
 
-    def _fetch_file_content(self, repo:Repository, file_path:str):
+    def _fetch_file_content(self, repo: Repository, file_path: str):
         try:
             file_content_encoded = repo.get_contents(file_path)
             # If the API return a list, the it's a dictionary; so we can skip it as its not code
@@ -47,16 +49,16 @@ class GithubCrawler(BaseCrawler):
             logger.warning(f"Skipped file {file_path} due to error: {e}")
             return None
 
-    def _build_content_str(self, repo:Repository, tree):
+    def _build_content_str(self, repo: Repository, tree):
         content_str = ""
         for element in tree:
             if element.type == "tree" or self._should_ignore(element.path):
                 continue
             file_content = self._fetch_file_content(repo, element.path)
             if file_content:
-                header = f"{'---'*10} FILE: {element.path} {'---'*10}\n"
-                footer = f"{'---'*20}\n\n"
-                content_str += (header + file_content + footer)
+                header = f"{'---' * 10} FILE: {element.path} {'---' * 10}\n"
+                footer = f"{'---' * 20}\n\n"
+                content_str += header + file_content + footer
         return content_str
 
     def extract(self, url: str, user_id: UUID4, user_full_name: str) -> None:
@@ -91,4 +93,3 @@ class GithubCrawler(BaseCrawler):
         except GithubException as e:
             logger.exception(f"Failed to crawl {url}: {e}")
             # raise e
-

@@ -1,4 +1,5 @@
 from loguru import logger
+from tqdm import tqdm
 from zenml import step
 
 from flash_llm.application.crawlers.dispatcher import CrawlerDispatcher
@@ -19,12 +20,13 @@ def get_or_create_user(user_full_name: str) -> UserDomain:
 
 
 @step
-def crawl_links(user: UserDomain, links: list[str]) -> None:
+def crawl_links(user: UserDomain, links: list[str]) -> list[str] | None:
     # 1. Dynamically load the repository via the factory
     repository: DocumentRepository = get_document_repository()
 
     # 2. Inject the repository into the Dispatcher
     dispatcher = CrawlerDispatcher(repository=repository)
-    for url in links:
+    for url in tqdm(links):
         crawler = dispatcher.get_crawler(url=url)
         crawler.extract(url=url, user_id=user.id, user_full_name=user.full_name)
+    return links

@@ -10,8 +10,11 @@ if __name__ == "__main__":
 
     # Call your ZenML pipeline exactly as you defined it
     digital_data_etl.with_options(enable_cache=False)(
-        user_full_name="agastya ved",
-        links=["https://github.com/imflash217/flash_llm", "https://github.com/imflash217/portfolio"],
+        user_full_name="siddhi vedika",
+        links=[
+            "https://github.com/imflash217/flash_llm",
+            "https://github.com/imflash217/portfolio",
+        ],
     )
 
     print("✅ Pipeline execution finished!")
