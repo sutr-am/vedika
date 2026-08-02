@@ -16,10 +16,15 @@ default:
 # Stage all changes, commit with a message, and push to the active branch
 [group('git')]
 gpush +message:
+    echo "----------------------------------"
     git add .
+    echo "----------------------------------"
     git commit -m "{{message}}"
+    echo "----------------------------------"
     git push
+    echo "----------------------------------"
     git pull
+    echo "----------------------------------"
 
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes
