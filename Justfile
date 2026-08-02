@@ -1,3 +1,6 @@
+# Automatically load variables from .env
+set dotenv-load
+
 # Variables
 compose_file := "docker/docker-compose.mongo.yaml"
 env_file := ".env"
@@ -75,6 +78,11 @@ clean:
     rm -rf .venv .pytest_cache .ruff_cache build dist src/*.egg-info
     find . -type d -name "__pycache__" -exec rm -rf {} +
 
+# Stop everything, clean artifacts, sync dependencies, and start all services fresh
+[group('maintenance')]
+restart-all: mongo-down zenml-down clean sync mongo-up zenml-up
+    echo "All services successfully restarted and fresh!"
+
 # ==============================================================================
 # ==============================================================================
 # 🧪 Testing & Execution Recipes
@@ -100,9 +108,31 @@ test-run-etl *args: mongo-up
 test-all *args: mongo-up
     uv run pytest -vv {{args}}
 
-# Run the ETL service end-to-end with MongoDB and ZenML server
-[group('services')]
-run-etl-service: mongo-up
-    echo "Starting ZenML server on port 8237..."; \
-    uv run zenml up --host 127.0.0.1 --port 8237 > ./tmp/zenml.log 2>&1 & \
+# ==============================================================================
+# 🚀 ZenML Lifecycle Recipes
+# ==============================================================================
+
+# Spin up ZenML, register the workspace, and set it as active
+[group('zenml')]
+zenml-up:
+    echo "Starting ZenML server on $ZENML_HOST:$ZENML_PORT ..."
+    uv run zenml up --host $ZENML_HOST --port $ZENML_PORT > $ZENML_LOGS_FILE 2>&1 & \
+    sleep 5 # Wait for server to boot
+    uv run zenml connect --url http://$ZENML_HOST:$ZENML_PORT
+    uv run zenml workspace register $ZENML_WORKSPACE || true
+    uv run zenml workspace set $ZENML_WORKSPACE
+    echo "ZenML is running in workspace: $ZENML_WORKSPACE"
+
+# Stop the ZenML local server
+[group('zenml')]
+zenml-down:
+    uv run zenml down
+
+# ==============================================================================
+# ⚙️ Execution Recipes
+# ==============================================================================
+
+# Run the ETL service end-to-end
+[group('core-services')]
+etl:
     uv run python tools/run_etl.py

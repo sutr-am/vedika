@@ -1,20 +1,21 @@
 import os
 
+from omegaconf import OmegaConf
+
 from flash_llm.orchestration.pipelines.etl import digital_data_etl
 
 if __name__ == "__main__":
-    # Ensure the factory knows which DB to use
     os.environ["DATABASE_TYPE"] = "mongo"
+
+    # Load parameters from the YAML configuration
+    config_path = "configs/etl.yaml"
+    cfg = OmegaConf.load(config_path)
 
     print("🚀 Triggering the Digital Data ETL Pipeline...")
 
-    # Call your ZenML pipeline exactly as you defined it
     digital_data_etl.with_options(enable_cache=False)(
-        user_full_name="siddhi vedika",
-        links=[
-            "https://github.com/imflash217/flash_llm",
-            "https://github.com/imflash217/portfolio",
-        ],
+        user_full_name=cfg.parameters.user_full_name,
+        links=list(cfg.parameters.links),
     )
 
     print("✅ Pipeline execution finished!")

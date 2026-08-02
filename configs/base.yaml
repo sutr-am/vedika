@@ -1,3 +1,4 @@
 mongo:
-    host: "mongodb://flash_llm:flash_llm@127.0.0.1:27017"
-    db_name: "flash_llm"
+    # Dynamically build the host string using environment variables
+    host: "mongodb://${oc.env:MONGO_USER}:${oc.env:MONGO_PASSWORD}@${oc.env:MONGO_HOST_IP}:${oc.env:MONGO_PORT}"
+    db_name: "${oc.env:MONGO_DB_NAME}"
