@@ -8,6 +8,18 @@ env_file := ".env"
 # Default recipe
 default:
     @just --list
+
+# ==============================================================================
+# 🌿 Git Workflow Recipes
+# ==============================================================================
+
+# Stage all changes, commit with a message, and push to the active branch
+[group('git')]
+gpush +message:
+    git add .
+    git commit -m "{{message}}"
+    git push
+
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes
 # ==============================================================================
