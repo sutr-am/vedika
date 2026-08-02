@@ -14,17 +14,31 @@ default:
 # ==============================================================================
 
 # Stage all changes, commit with a message, and push to the active branch
+# [group('git')]
+# gpush +message:
+#     git add .
+#     git commit -m "{{message}}"
+#     git push
+#     git pull
+
+# Stage all changes, commit with a message, and push to the active branch
 [group('git')]
 gpush +message:
-    echo "----------------------------------"
-    git add .
-    echo "----------------------------------"
-    git commit -m "{{message}}"
-    echo "----------------------------------"
-    git push
-    echo "----------------------------------"
-    git pull
-    echo "----------------------------------"
+    @echo "======================================================================"
+    @echo "🌿 INITIATING GIT WORKFLOW"
+    @echo "======================================================================"
+    @echo "📦 Staging all changes..."
+    @git add .
+    @echo ""
+    @echo "📝 Committing with message: '{{message}}'"
+    @git commit -m "{{message}}" || true
+    @echo ""
+    @echo "🚀 Pushing to remote..."
+    @git push
+    @echo "======================================================================"
+    @echo "✅ ALL DONE! Your branch is up to date."
+    @echo "======================================================================"
+
 
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes
