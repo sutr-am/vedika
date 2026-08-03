@@ -92,4 +92,4 @@ class GithubCrawler(BaseCrawler):
             logger.success(f"Successfully saved codebase: {repo_name}")
         except GithubException as e:
             logger.exception(f"Failed to crawl {url}: {e}")
-            # raise e
+            raise e

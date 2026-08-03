@@ -5,12 +5,14 @@ import sys
 def add_start_paddings():
     if len(sys.argv) > 1:
         with open(sys.argv[1], "a", encoding="utf-8") as f:
-            f.write(f"\n#### START {'##'*30}\n\n")
+            f.write(f"\n#### START {'##' * 30}\n\n")
+
 
 def add_end_paddings():
     if len(sys.argv) > 1:
         with open(sys.argv[1], "a", encoding="utf-8") as f:
-            f.write(f"\n\n#### END {'##'*30}\n")
+            f.write(f"\n\n#### END {'##' * 30}\n")
+
 
 def main():
     # Regular expression to match standard ANSI escape codes (colors, styles, cursor jumps)
@@ -39,6 +41,7 @@ def main():
                 f.write(clean_line)
 
     add_end_paddings()
+
 
 if __name__ == "__main__":
     main()
