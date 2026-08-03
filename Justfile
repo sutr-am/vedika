@@ -22,13 +22,13 @@ default:
 gpush +message:
     @{{panel}} "[bold green]🌿 INITIATING GIT WORKFLOW[/]"
     @{{log}} "[yellow]📦 Staging all changes...[/]"
-    @git add .
+    git add .
     @{{log}} "[yellow]📝 Committing with message: {{message}}[/]"
-    @git commit -m "{{message}}" || true
+    git commit -m "{{message}}" || true
     @{{log}} "[yellow]🚀 Pushing to remote...[/]"
-    @git push
+    git push
     @{{panel}} "[bold blue]✅ ALL DONE! Your branch is up to date.[/]"
-    @git pull
+    git pull
 
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes
@@ -138,15 +138,15 @@ test-all *args: mongo-up
 [group('zenml')]
 zenml-up:
     @{{log}} "[yellow]Starting and connecting to ZenML local server...[/]"
-    @uv run zenml login --local 2>&1 | uv run python tools/logger_filter.py "$ZENML_LOGS_FILE"
+    uv run zenml login --local 2>&1 | uv run python tools/logger_filter.py "$ZENML_LOGS_FILE"
     @{{log}} "[yellow]Waiting 5 seconds for ZenML server daemon to initialize...[/]"
-    @sleep 5
+    sleep 5
     @{{panel}} "[bold blue]ZenML local server is ready and active![/]"
 
 # Stop the ZenML local server
 [group('zenml')]
 zenml-down:
-    @uv run zenml logout --local
+    uv run zenml logout --local
 
 # ==============================================================================
 # ⚙️ Execution Recipes
