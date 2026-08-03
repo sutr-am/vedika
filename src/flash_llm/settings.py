@@ -19,6 +19,7 @@ OmegaConf.register_new_resolver(
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIGS_DIR = PROJECT_ROOT / "configs"
 
+
 class MongoConfig(BaseModel):
     # Remove hardcoded defaults; Pydantic will now fail if base.yaml doesn't provide these
     host: str
