@@ -5,6 +5,11 @@ set dotenv-load
 compose_file := "docker/docker-compose.mongo.yaml"
 env_file := ".env"
 
+# Global Logging Utilities
+log := "uv run rich --print"
+panel := "uv run rich --print --panel double"
+
+
 # Default recipe
 default:
     @just --list
@@ -22,23 +27,22 @@ default:
 #     git pull
 
 # Stage all changes, commit with a message, and push to the active branch
+# [group('git')]
+# gpush +message:
+#     @git add .
+#     @git commit -m "{{message}}"
+#     @git push
+
 [group('git')]
 gpush +message:
-    @echo "======================================================================"
-    @echo "🌿 INITIATING GIT WORKFLOW"
-    @echo "======================================================================"
-    @echo "📦 Staging all changes..."
+    @{{panel}} "[bold green]🌿 INITIATING GIT WORKFLOW[/]"
+    @{{log}} "[yellow]📦 Staging all changes...[/]"
     @git add .
-    @echo ""
-    @echo "📝 Committing with message: '{{message}}'"
+    @{{log}} "[yellow]📝 Committing with message: {{message}}[/]"
     @git commit -m "{{message}}" || true
-    @echo ""
-    @echo "🚀 Pushing to remote..."
+    @{{log}} "[yellow]🚀 Pushing to remote...[/]"
     @git push
-    @echo "======================================================================"
-    @echo "✅ ALL DONE! Your branch is up to date."
-    @echo "======================================================================"
-
+    @{{panel}} "[bold blue]✅ ALL DONE! Your branch is up to date.[/]"
 
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes
