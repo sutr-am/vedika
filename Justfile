@@ -35,13 +35,13 @@ _run +cmd:
 gpush +message:
     @{{panel}} "[bold green]🌿 INITIATING GIT WORKFLOW[/]"
     @{{log}} "[yellow]📦 Staging all changes...[/]"
-    git add .
+    @just _run git add .
     @{{log}} "[yellow]📝 Committing with message: {{message}}[/]"
-    git commit -m "{{message}}" || true
+    @just _run git commit -m "{{message}}" || true
     @{{log}} "[yellow]🚀 Pushing to remote...[/]"
-    git push
+    @just _run git push
     @{{panel}} "[bold blue]✅ ALL DONE! Your branch is up to date.[/]"
-    git pull
+    @just _run git pull
 
 
 # ==============================================================================
