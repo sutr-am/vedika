@@ -94,12 +94,12 @@ tree:
 # Build and spin up MongoDB container in the background (preserves data)
 [group('database')]
 mongo-up:
-    docker compose --env-file {{env_file}} -f {{compose_file}} up -d --build
+    @just _run docker compose --env-file {{env_file}} -f {{compose_file}} up -d --build
 
 # Stop and remove MongoDB container (data volume remains safe)
 [group('database')]
 mongo-down:
-    docker compose --env-file {{env_file}} -f {{compose_file}} down
+    @just _run docker compose --env-file {{env_file}} -f {{compose_file}} down
 
 # Stream real-time MongoDB container logs
 [group('database')]
@@ -148,6 +148,12 @@ clean:
 [group('maintenance')]
 restart-all: mongo-down zenml-down clean sync format mongo-up zenml-up
     @just _run echo "All services successfully restarted and fresh!"
+
+
+# Stop everything, clean artifacts, and sync dependencies
+[group('maintenance')]
+stop-all: mongo-down zenml-down
+    @just _run echo "All services successfully shut down"
 
 # ==============================================================================
 # ==============================================================================
