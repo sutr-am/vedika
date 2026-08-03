@@ -6,8 +6,6 @@ from omegaconf import OmegaConf
 from flash_llm.orchestration.pipelines.etl import digital_data_etl
 
 if __name__ == "__main__":
-    # os.environ["DATABASE_TYPE"] = "mongo"
-
     master_config_path = Path("configs/etl_run_config.yaml")
     if not master_config_path:
         raise FileNotFoundError(f"Master ETL config file not found at {master_config_path}")
