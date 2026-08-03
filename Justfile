@@ -36,7 +36,7 @@ gpush +message:
     @{{panel}} "[bold green] INITIATING GIT WORKFLOW[/]"
     @just _run git status
     @just _run git add .
-    @just _run "git commit -m '{{message}}'"
+    @just _run git commit -m '{{message}}'
     @just _run git push
     @just _run git pull
 
