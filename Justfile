@@ -33,7 +33,7 @@ _run +cmd:
 
 [group('git')]
 gpush +message:
-    @{{panel}} "[bold green]🌿 INITIATING GIT WORKFLOW[/]"
+    @{{panel}} "[bold green] INITIATING GIT WORKFLOW[/]"
     @just _run git status
     @just _run git add .
     @just _run git commit -m "{{message}}" || true
