@@ -25,7 +25,7 @@ _run_logged log_file +cmd:
 # Run command with a Rich box only (and fail fast on non-zero exit codes)
 _run +cmd:
     @python3 -c 'from rich import print; from rich.panel import Panel; import sys; print(Panel(f"[bold cyan]{sys.argv[1]}[/bold cyan]", title="Executing Command", border_style="blue"))' "{{cmd}}"
-    @sh -c '{{cmd}}'
+    @{{cmd}}
 
 # ==============================================================================
 # 🌿 Git Workflow Recipes
@@ -36,7 +36,7 @@ gpush +message:
     @{{panel}} "[bold green] INITIATING GIT WORKFLOW[/]"
     @just _run git status
     @just _run git add .
-    @just _run git commit -m '{{message}}'
+    @just _run "git commit -m '{{message}}'"
     @just _run git push
     @just _run git pull
 
