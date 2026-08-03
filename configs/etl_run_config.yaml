@@ -1,0 +1,4 @@
+# configs/etl_run_config.yaml
+active_user_configs:
+    - "configs/users/user_01.yaml"
+    - "configs/users/user_02.yaml"

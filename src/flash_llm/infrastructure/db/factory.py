@@ -7,7 +7,7 @@ def get_document_repository() -> DocumentRepository:
     """
     Factory function to instantiate teh correct database repository based on settings or env
     """
-    db_type = os.getenv("DATABASE_TYPE", "mongo").lower()
+    db_type = os.getenv("DATABASE_TYPE", "").lower()
     if db_type == "mongo":
         from flash_llm.infrastructure.db.mongo.repositories import MongoDocumentRepository
 

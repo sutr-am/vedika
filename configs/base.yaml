@@ -1,4 +1,10 @@
+# database_type: "${oc.env:DATABASE_TYPE,mongo}" #fallback to "mongo" is the env var is not set
+
 mongo:
     # Dynamically build the host string using environment variables
     host: "mongodb://${oc.env:MONGO_USER}:${oc.env:MONGO_PASSWORD}@${oc.env:MONGO_HOST_IP}:${oc.env:MONGO_PORT}"
     db_name: "${oc.env:MONGO_DB_NAME}"
+
+# qdrant:
+#     host: "${oc.env:QDRANT_HOST}"
+#     port: ${oc.env:QDRANT_PORT}
