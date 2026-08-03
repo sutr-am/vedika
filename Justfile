@@ -43,6 +43,7 @@ gpush +message:
     @{{log}} "[yellow]🚀 Pushing to remote...[/]"
     @git push
     @{{panel}} "[bold blue]✅ ALL DONE! Your branch is up to date.[/]"
+    @git pull
 
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes
