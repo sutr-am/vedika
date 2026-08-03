@@ -40,6 +40,16 @@ gpush +message:
     @just _run git push
     @just _run git pull
 
+[group('git')]
+grebase +message:
+    @{{panel}} "[bold green] INITIATING GIT WORKFLOW[/]"
+    @just _run git status
+    @just _run git add .
+    @just _run "git commit -m '{{message}}'"
+    @just _run git fetch origin
+    @just _run git rebase origin/main
+    @just _run git push origin 03_data_engineering --force-with-lease
+    @just _run git pull
 
 # ==============================================================================
 # 📦 Environment & Dependency Recipes
