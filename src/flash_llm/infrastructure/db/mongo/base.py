@@ -1,5 +1,6 @@
 import uuid
 from abc import ABC
+from datetime import datetime, timezone
 from typing import Any, Generic, Type, TypeVar
 
 from loguru import logger
@@ -14,6 +15,8 @@ T = TypeVar("T", bound="NoSQLBaseDocument")
 
 class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
     id: UUID4 = Field(default_factory=uuid.uuid4)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __eq__(self, other: object) -> bool:
         # for comparing two databses
@@ -83,6 +86,7 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
         collection = self._get_collection()
         mongo_doc = self.to_mongo(**kwargs)
         doc_id = mongo_doc.get("_id")
+        self.updated_at = datetime.now(timezone.utc)
 
         if not doc_id:
             logger.error(f"Cannot save document of type {self.__class__.__name__} without an id.")
