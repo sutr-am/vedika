@@ -18,21 +18,6 @@ default:
 # 🌿 Git Workflow Recipes
 # ==============================================================================
 
-# Stage all changes, commit with a message, and push to the active branch
-# [group('git')]
-# gpush +message:
-#     git add .
-#     git commit -m "{{message}}"
-#     git push
-#     git pull
-
-# Stage all changes, commit with a message, and push to the active branch
-# [group('git')]
-# gpush +message:
-#     @git add .
-#     @git commit -m "{{message}}"
-#     @git push
-
 [group('git')]
 gpush +message:
     @{{panel}} "[bold green]🌿 INITIATING GIT WORKFLOW[/]"
@@ -113,7 +98,7 @@ format:
 [group('maintenance')]
 clean:
     rm -rf .venv .pytest_cache .ruff_cache build dist src/*.egg-info
-    find . -type d -name "__pycache__" -exec rm -rf {} +
+    find . -type d -name ".git" -prune -o -type d -name "__pycache__" -exec rm -rf {} +
 
 # Stop everything, clean artifacts, sync dependencies, and start all services fresh
 [group('maintenance')]
@@ -149,21 +134,19 @@ test-all *args: mongo-up
 # 🚀 ZenML Lifecycle Recipes
 # ==============================================================================
 
-# Spin up ZenML, register the workspace, and set it as active
+# Spin up ZenML locally and connect (saving output to logs)
 [group('zenml')]
 zenml-up:
-    echo "Starting ZenML server on $ZENML_HOST:$ZENML_PORT ..."
-    uv run zenml up --host $ZENML_HOST --port $ZENML_PORT > $ZENML_LOGS_FILE 2>&1 & \
-    sleep 5 # Wait for server to boot
-    uv run zenml connect --url http://$ZENML_HOST:$ZENML_PORT
-    uv run zenml workspace register $ZENML_WORKSPACE || true
-    uv run zenml workspace set $ZENML_WORKSPACE
-    echo "ZenML is running in workspace: $ZENML_WORKSPACE"
+    @{{log}} "[yellow]Starting and connecting to ZenML local server...[/]"
+    @uv run zenml login --local 2>&1 | uv run python tools/logger_filter.py "$ZENML_LOGS_FILE"
+    @{{log}} "[yellow]Waiting 5 seconds for ZenML server daemon to initialize...[/]"
+    @sleep 5
+    @{{panel}} "[bold blue]ZenML local server is ready and active![/]"
 
 # Stop the ZenML local server
 [group('zenml')]
 zenml-down:
-    uv run zenml down
+    @uv run zenml logout --local
 
 # ==============================================================================
 # ⚙️ Execution Recipes
@@ -172,4 +155,4 @@ zenml-down:
 # Run the ETL service end-to-end
 [group('core-services')]
 etl:
-    uv run python tools/run_etl.py
+    uv run python tools/run_etl.py 2>&1 | uv run python tools/logger_filter.py "$ETL_LOGS_FILE"
