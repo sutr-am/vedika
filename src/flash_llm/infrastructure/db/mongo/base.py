@@ -1,17 +1,22 @@
+import uuid
+from abc import ABC
+from datetime import datetime, timezone
+from typing import Any, Generic, Type, TypeVar
+
 from loguru import logger
+from pydantic import UUID4, BaseModel, Field
+from pymongo import errors
+
 from flash_llm.infrastructure.db.mongo.connection import connection
 from flash_llm.settings import settings
-from typing import TypeVar, Generic, Type, Any
-from pydantic import BaseModel, UUID4, Field
-from abc import ABC
-import uuid
-from pymongo import errors
 
 T = TypeVar("T", bound="NoSQLBaseDocument")
 
 
-class NoSQLBaseDocument(BaseModel, Generic[T]):
+class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
     id: UUID4 = Field(default_factory=uuid.uuid4)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __eq__(self, other: object) -> bool:
         # for comparing two databses
@@ -25,7 +30,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T]):
         super().__init_subclass__(**kwargs)
         settings_cls = getattr(cls, "Settings", None)
         if not getattr(settings_cls, "collection_name", None):
-            raise TypeError(f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute.")
+            raise TypeError(
+                f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute."
+            )
 
     @classmethod
     def _sanitize_filters(cls, filter_options: dict[str, Any]) -> dict[str, Any]:
@@ -48,7 +55,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T]):
         settings_cls = getattr(cls, "Settings", None)
         collection_name = getattr(settings_cls, "collection_name", None)
         if not collection_name:
-            raise TypeError(f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute.")
+            raise TypeError(
+                f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute."
+            )
         return collection_name
 
     @classmethod
@@ -63,7 +72,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T]):
 
     def to_mongo(self: T, **kwargs) -> dict[str, Any]:
         parsed = self.model_dump(
-            exclude_unset=kwargs.pop("exclude_unset", False), by_alias=kwargs.pop("by_alias", True), **kwargs
+            exclude_unset=kwargs.pop("exclude_unset", False),
+            by_alias=kwargs.pop("by_alias", True),
+            **kwargs,
         )
 
         if "_id" not in parsed and "id" in parsed:
@@ -75,6 +86,7 @@ class NoSQLBaseDocument(BaseModel, Generic[T]):
         collection = self._get_collection()
         mongo_doc = self.to_mongo(**kwargs)
         doc_id = mongo_doc.get("_id")
+        self.updated_at = datetime.now(timezone.utc)
 
         if not doc_id:
             logger.error(f"Cannot save document of type {self.__class__.__name__} without an id.")
@@ -88,7 +100,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T]):
             logger.warning(f"Save was NOT acknowledge for ID = {doc_id}")
             return None
         except errors.PyMongoError:
-            logger.exception(f"Failed to save document of type {self.__class__.__name__} with ID = {doc_id}")
+            logger.exception(
+                f"Failed to save document of type {self.__class__.__name__} with ID = {doc_id}"
+            )
             return None
 
     @classmethod

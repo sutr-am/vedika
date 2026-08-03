@@ -3,6 +3,6 @@ from enum import StrEnum
 
 class DataCategory(StrEnum):
     USERS = "users"
-    REPOSITORIES = "repositories"
+    CODEBASES = "codebases"
     POSTS = "posts"
     ARTICLES = "articles"
