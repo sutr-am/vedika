@@ -9,10 +9,23 @@ env_file := ".env"
 log := "uv run rich --print"
 panel := "uv run rich --print --panel double"
 
-
-# Default recipe
+# Default recipe....must be the first recipe in the file
 default:
     @just --list
+
+# ==============================================================================
+# 🛠️ Master Execution Macros (Unquoted & Clean)
+# ==============================================================================
+
+# Run command with a Rich box and log filtering
+_run_logged log_file +cmd:
+    @python3 -c 'from rich import print; from rich.panel import Panel; import sys; print(Panel(f"[bold cyan]{sys.argv[1]}[/bold cyan]", title="Executing Command", border_style="blue"))' "{{cmd}}"
+    @{{cmd}} 2>&1 | uv run python tools/logger_filter.py "{{log_file}}"
+
+# Run command with a Rich box only (no logging)
+_run +cmd:
+    @python3 -c 'from rich import print; from rich.panel import Panel; import sys; print(Panel(f"[bold cyan]{sys.argv[1]}[/bold cyan]", title="Executing Command", border_style="blue"))' "{{cmd}}"
+    @{{cmd}}
 
 # ==============================================================================
 # 🌿 Git Workflow Recipes
@@ -29,6 +42,43 @@ gpush +message:
     git push
     @{{panel}} "[bold blue]✅ ALL DONE! Your branch is up to date.[/]"
     git pull
+
+
+# ==============================================================================
+# 📦 Environment & Dependency Recipes
+# ==============================================================================
+
+# Sync virtual environment and install all dependencies
+[group('environment')]
+sync:
+    uv sync
+
+# ==============================================================================
+# 🧹 Code Quality & Formatting Recipes
+# ==============================================================================
+
+# Run linter and format checks
+[group('code-quality')]
+lint:
+    @just _run uv run ruff check .
+    @just _run uv run ruff format --check .
+
+# Automatically fix lint issues and format code
+[group('code-quality')]
+check-fix-format:
+    @just _run uv run ruff check --select I --fix .
+    @just _run uv run ruff format
+
+# Format codebase using ruff
+[group('code-quality')]
+format:
+    # @just _run uv run ruff check --select I --fix .
+    @just _run uv run ruff format
+
+# Shows the tree structure of the CWD without any excluded files
+[group('code-quality')]
+tree:
+    tree -I "__pycache__|*.pyc|__init__.py|*.egg-info"
 
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes
@@ -60,35 +110,22 @@ mongo-reset:
     just mongo-up
 
 # ==============================================================================
-# 📦 Environment & Dependency Recipes
+# 🚀 ZenML Lifecycle Recipes
 # ==============================================================================
 
-# Sync virtual environment and install all dependencies
-[group('environment')]
-sync:
-    uv sync
+# Spin up ZenML locally and connect (saving output to logs)
+[group('zenml')]
+zenml-up:
+    @{{log}} "[yellow]Starting and connecting to ZenML local server...[/]"
+    @just _run_logged "$ZENML_LOGS_FILE" uv run zenml login --local
+    @{{log}} "[yellow]Waiting 5 seconds for ZenML server daemon to initialize...[/]"
+    @just _run sleep 5
+    @{{panel}} "[bold blue]ZenML local server is ready and active![/]"
 
-# ==============================================================================
-# 🧹 Code Quality & Formatting Recipes
-# ==============================================================================
-
-# Run linter and format checks
-[group('code-quality')]
-lint:
-    uv run ruff check .
-    uv run ruff format --check .
-
-# Automatically fix lint issues and format code
-[group('code-quality')]
-check-fix-format:
-    uv run ruff check --select I --fix .
-    uv run ruff format
-
-# Format codebase using ruff
-[group('code-quality')]
-format:
-    uv run ruff check --select I --fix .
-    uv run ruff format
+# Stop the ZenML local server
+[group('zenml')]
+zenml-down:
+    @just _run uv run zenml logout --local
 
 # ==============================================================================
 # 🧹 Maintenance Recipes
@@ -97,13 +134,13 @@ format:
 # Clean build artifacts, cache, and compiled bytecode
 [group('maintenance')]
 clean:
-    rm -rf .venv .pytest_cache .ruff_cache build dist src/*.egg-info
-    find . -type d -name ".git" -prune -o -type d -name "__pycache__" -exec rm -rf {} +
+    @just _run find . -type d -name ".git" -prune -o -type d -name "__pycache__" -exec rm -rf {} +
+    @just _run rm -rf .venv .pytest_cache .ruff_cache build dist src/*.egg-info
 
 # Stop everything, clean artifacts, sync dependencies, and start all services fresh
 [group('maintenance')]
-restart-all: mongo-down zenml-down clean sync mongo-up zenml-up
-    echo "All services successfully restarted and fresh!"
+restart-all: mongo-down zenml-down clean sync format mongo-up zenml-up
+    @just _run echo "All services successfully restarted and fresh!"
 
 # ==============================================================================
 # ==============================================================================
@@ -113,40 +150,22 @@ restart-all: mongo-down zenml-down clean sync mongo-up zenml-up
 # Run fast unit tests only (no MongoDB required)
 [group('testing')]
 test-unit *args:
-    uv run pytest -vv tests/unit {{args}}
+    @just _run uv run pytest -vv tests/unit {{args}}
 
 # Run integration/DB tests (automatically spins up MongoDB)
 [group('testing')]
 test-integration *args: mongo-up
-    uv run pytest -vv tests/integration {{args}}
+    @just _run uv run pytest -vv tests/integration {{args}}
 
 # Run ETL-related tests (spins up MongoDB for pipeline-backed tests)
 [group('testing')]
 test-run-etl *args: mongo-up
-    uv run pytest -vv tests -k "run_etl or etl" {{args}}
+    @just _run uv run pytest -vv tests -k "run_etl or etl" {{args}}
 
 # Run ALL tests (spins up MongoDB)
 [group('testing')]
 test-all *args: mongo-up
-    uv run pytest -vv {{args}}
-
-# ==============================================================================
-# 🚀 ZenML Lifecycle Recipes
-# ==============================================================================
-
-# Spin up ZenML locally and connect (saving output to logs)
-[group('zenml')]
-zenml-up:
-    @{{log}} "[yellow]Starting and connecting to ZenML local server...[/]"
-    uv run zenml login --local 2>&1 | uv run python tools/logger_filter.py "$ZENML_LOGS_FILE"
-    @{{log}} "[yellow]Waiting 5 seconds for ZenML server daemon to initialize...[/]"
-    sleep 5
-    @{{panel}} "[bold blue]ZenML local server is ready and active![/]"
-
-# Stop the ZenML local server
-[group('zenml')]
-zenml-down:
-    uv run zenml logout --local
+    @just _run uv run pytest -vv {{args}}
 
 # ==============================================================================
 # ⚙️ Execution Recipes
@@ -155,4 +174,6 @@ zenml-down:
 # Run the ETL service end-to-end
 [group('core-services')]
 etl:
-    uv run python tools/run_etl.py 2>&1 | uv run python tools/logger_filter.py "$ETL_LOGS_FILE"
+    @just _run_logged "$ETL_LOGS_FILE" uv run python tools/run_etl.py
+    @{{log}} "[green]✅ Pipeline execution finished![/]"
+
