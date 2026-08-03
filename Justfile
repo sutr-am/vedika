@@ -25,7 +25,7 @@ _run_logged log_file +cmd:
 # Run command with a Rich box only (and fail fast on non-zero exit codes)
 _run +cmd:
     @python3 -c 'from rich import print; from rich.panel import Panel; import sys; print(Panel(f"[bold cyan]{sys.argv[1]}[/bold cyan]", title="Executing Command", border_style="blue"))' "{{cmd}}"
-    @{{cmd}}
+    @sh -c '{{cmd}}'
 
 # ==============================================================================
 # 🌿 Git Workflow Recipes
