@@ -1,0 +1,231 @@
+"@startuml flash_llm_architecture"
+!pragma layout smetana
+allowmixing
+skinparam linetype polyline
+skinparam packageTitleAlignment center
+skinparam ArrowMessageAlignment center
+skinparam ArrowFontName Arial
+' Constrains the rendering to a 1024x1024 square bounding box
+' scale max 1024 width
+' scale max 1024 height
+
+' ==============================================================================
+' GLOBAL LAYOUT & SPACING
+' ==============================================================================
+skinparam nodesep 20
+skinparam ranksep 20
+
+' The new CSS-style approach (replaces skinparam padding)
+<style>
+package {
+    Padding 8
+}
+class {
+    Padding 8
+}
+interface {
+    Padding 8
+}
+' Styles the outer system boundary
+' /* Specific styling for the new outer boundary */
+package<<System>> {
+    LineStyle 2
+    LineColor #000
+    BackgroundColor transparent
+    Margin 20
+}
+
+package {
+    Padding 8
+    LineColor #000
+}
+
+arrow {
+    LineThickness 2
+    LineColor #000
+    FontColor #000
+    FontSize 12
+}
+</style>
+
+
+' ==============================================================================
+' ICON MACROS
+' ==============================================================================
+!$ICON_CONFIG = "<&cog> "
+!$ICON_ORCH   = "<&layers> "
+!$ICON_APP    = "<color:red><&bug></color> "
+!$ICON_INFRA  = "<&box> "
+
+' ==============================================================================
+' ARROW MACROS (BOLD & STYLED)
+' ==============================================================================
+
+' 1. DEPENDENCY / MAPS TO (Dashed Arrow: ..>)
+!$USE = ".[bold].>"
+
+' 2. EXECUTION FLOW (Solid Arrow: -->)
+!$FLOW = "-[bold]->"
+
+' 3. INHERITANCE (Solid with Triangle: --|>)
+!$EXTENDS = "-[bold]-|>"
+
+' 4. EMPHASIZED FLOW (Equivalent to Activity thick arrow: ==>)
+' (Class diagrams don't support literal ==> well, so we use max thickness)
+!$HEAVY_FLOW = "-[thickness=3]->"
+
+' 5. IMPLEMENTS INTERFACE (Dashed with Triangle: ..|>)
+!$IMPLEMENTS = ".[bold].|>"
+
+!$COMPOSES = "*-[bold]->"
+!$AGGREGATES_RED = "o-[#red,bold]->"
+!$IMPLEMENTS_RED = ".[#red,bold].|>"
+!$EXTENDS_BLUE_AGG = "o-[#blue,bold]-|>"
+!$EXTENDS_RED_COMP = "*-[#red,bold]-|>"
+
+' ==============================================================================
+' SYSTEM BOUNDARY
+' ==============================================================================
+package "ETL Data Pipeline System" #line:Red;line.bold;back:White {
+    ' ==============================================================================
+    ' CONFIGURATION & INITIATION LAYER
+    ' ==============================================================================
+    package "$ICON_CONFIG Configuration & Entry Layer" #line:DarkGreen;line.bold;back:LightGreen {
+        class "run_etl.py / Justfile" as Entrypoint <<Orchestrator>> {
+            Triggers execution environment
+        }
+
+        class Settings <<pydantic.BaseModel>> {
+            + database_type: Literal['mongo', 'postgres', 'memory']
+            - mongo: Optional[MongoConfig]
+            * postgres: Optional[PostgresConfig]
+            + load_settings(config_name: str): Settings
+        }
+    }
+
+    ' ==============================================================================
+    ' ORCHESTRATION LAYER (ZENML)
+    ' ==============================================================================
+    package "$ICON_ORCH Orchestration Layer (ZenML)" #line:Gray;line.bold {
+        class "Pipeline: digital_data_etl" as Pipeline <<@pipeline>> #line:blue;line.bold;back:LightYellow {
+            + with_options(enable_cache=False)
+        }
+
+        class "Step: get_or_create_user" as Step1 <<@step>>
+        class "Step: crawl_links" as Step2 <<@step>>
+    }
+
+    ' ==============================================================================
+    ' APPLICATION & DOMAIN LAYER
+    ' ==============================================================================
+    package "$ICON_APP Application & Extraction Layer" {
+        class CrawlerDispatcher {
+            + get_crawler(url: str): BaseCrawler
+        }
+
+        abstract class BaseCrawler {
+            + extract(url: str, user_id: str): DomainModel
+        }
+
+        class GithubCrawler {
+            + extract_repository_data()
+            + parse_tree()
+        }
+
+        class UserDomain <<DomainModel>> {
+            + id: str
+            + full_name: str
+        }
+
+        class CodebaseDomain <<DomainModel>> {
+            + repo_name: str
+            + file_structure: dict
+        }
+    }
+
+    ' ==============================================================================
+    ' INFRASTRUCTURE & REPOSITORY LAYER
+    ' ==============================================================================
+    package "$ICON_INFRA Infrastructure Layer" {
+        interface DocumentRepository {
+            + save(document: BaseDocument)
+            + find_by_id(id: str)
+        }
+
+        class MongoDocumentRepository {
+            + save()
+            + get_or_create()
+        }
+
+        abstract class NoSQLBaseDocument <<ODM>> {
+            + id: str
+            + created_at: datetime
+            + updated_at: datetime
+            --
+            + to_mongo(): dict
+            + save(): Self
+        }
+
+        class UserDocument <<ODM>> {
+            + full_name: str
+        }
+
+        class CodebaseDocument <<ODM>> {
+            + repo_url: str
+            + content: str
+        }
+
+        database "MongoDB Storage\n(Collections: users, documents)\n" as Database
+    }
+}
+
+' ==============================================================================
+' DATA FLOW & SYSTEM RELATIONSHIPS
+' ==============================================================================
+
+' Config & Settings Flow
+Entrypoint $FLOW Settings : "1. Loads Config & Instantiates"
+Settings $USE MongoDocumentRepository : "Injects DB Credentials"
+
+' Pipeline Execution Flow
+Entrypoint $FLOW Pipeline : "2. Triggers Execution"
+Pipeline $FLOW Step1 : "Executes Step 1"
+Pipeline $FLOW Step2 : "Executes Step 2"
+
+' App & Crawling Flow
+Step1 $FLOW DocumentRepository : "Uses Repository"
+Step2 $FLOW CrawlerDispatcher : "3. Dispatches Crawl Request"
+CrawlerDispatcher $FLOW GithubCrawler : "Instantiates Engine"
+GithubCrawler $FLOW CodebaseDomain : "4. Extracts Raw Data"
+
+' Infrastructure & Persistence Flow
+CodebaseDomain $USE CodebaseDocument : "5. Maps to Document"
+UserDomain $USE UserDocument : "Maps to Document"
+
+MongoDocumentRepository $COMPOSES NoSQLBaseDocument : "6. Converts to Dict (to_mongo)"
+MongoDocumentRepository $AGGREGATES_RED Database : "7. PyMongo $set / $setOnInsert"
+
+' Native OOP Inheritance
+' (Notice the classes are flipped so the macro points left-to-right to the Parent)
+UserDocument $EXTENDS_BLUE_AGG NoSQLBaseDocument
+CodebaseDocument $EXTENDS_RED_COMP NoSQLBaseDocument
+GithubCrawler $EXTENDS BaseCrawler
+
+' Native OOP Interface Implementation
+MongoDocumentRepository $IMPLEMENTS_RED DocumentRepository
+
+' ==============================================================================
+' DIAGRAM LEGEND
+' ==============================================================================
+legend bottom right
+    | = Icon / Line Type | = Meaning & System Usage |
+    | 🟢 **C** (Green Circle) | **Concrete Class:** A standard class that can be instantiated (e.g., Settings). |
+    | 🔵 **A** (Blue Circle) | **Abstract Class:** A base class meant for inheritance (e.g., BaseCrawler). |
+    | 🟣 **I** (Purple Circle) | **Interface:** A structural contract (e.g., DocumentRepository). |
+    | ◁-- (Solid Triangle) | **Inherits:** Shows a child class inheriting from a parent. |
+    | ◁.. (Dashed Triangle)| **Implements:** Shows a class fulfilling an Interface contract. |
+    | --> (Solid Arrow) | **Execution Flow:** Shows chronological action or a direct trigger. |
+    | ..> (Dashed Arrow) | **Dependency / Maps To:** Shows a loose relationship or data translation. |
+endlegend
+
+@enduml

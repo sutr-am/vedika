@@ -51,6 +51,11 @@ grebase +message:
     @just _run git push origin 03_data_engineering --force-with-lease
     @just _run git pull
 
+# Render architecture diagram to SVG
+[group('docs')]
+render-diagrams:
+    @just _run plantuml -tsvg docs/*.puml
+
 # ==============================================================================
 # 📦 Environment & Dependency Recipes
 # ==============================================================================
