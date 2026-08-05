@@ -12,7 +12,7 @@ U = TypeVar("U", bound=UserDomain)
 
 class BaseContentRepository(Generic[T], ABC):
     @abstractmethod
-    def exists_by_url(self, url:str)->bool:
+    def exists_by_url(self, url: str) -> bool:
         """Check if a document is already stored without fetching the full payload."""
         pass
 

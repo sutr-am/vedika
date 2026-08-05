@@ -23,6 +23,4 @@ if __name__ == "__main__":
             user_full_name=cfg.parameters.user_full_name,
             links=list(cfg.parameters.links),
         )
-        logger.info(f"\n\n{'---'*30}\n")
-
-    print("✅ Pipeline execution finished!")
+        logger.info(f"\n\n{'---' * 30}\n")

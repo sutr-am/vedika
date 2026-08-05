@@ -36,7 +36,9 @@ def get_or_create_user(user_full_name: str) -> Annotated[UserDomain, "user"]:
 
 
 @step
-def crawl_links(user: UserDomain, links: list[str], force_recrawl:bool=False) -> Annotated[list[str] | None, "crawled_links"]:
+def crawl_links(
+    user: UserDomain, links: list[str], force_recrawl: bool = False
+) -> Annotated[list[str] | None, "crawled_links"]:
     crawler_dispatcher = build_crawler_dispatcher()
     metadata: dict[str, dict[str, Any]] = {}
     successful_urls: list[str] = []
@@ -44,7 +46,12 @@ def crawl_links(user: UserDomain, links: list[str], force_recrawl:bool=False) ->
     for url in tqdm(links, "Crawling links"):
         crawled_domain = urlparse(url).netloc
         if crawled_domain not in metadata:
-            metadata[crawled_domain] = {"successful": [], "skipped": [], "failed": [], "count": {"successful":0, "skipped":0, "failed":0, "total": 0}}
+            metadata[crawled_domain] = {
+                "successful": [],
+                "skipped": [],
+                "failed": [],
+                "count": {"successful": 0, "skipped": 0, "failed": 0, "total": 0},
+            }
         metadata[crawled_domain]["count"]["total"] += 1
         try:
             crawler = crawler_dispatcher.get_crawler(url=url)
@@ -52,7 +59,9 @@ def crawl_links(user: UserDomain, links: list[str], force_recrawl:bool=False) ->
             # Get the specific repository for this document's category
             repository: BaseContentRepository = get_document_repository(category=crawler._category)
             if not force_recrawl and repository.exists_by_url(url=url):
-                logger.info(f"Skipping {url} - already exists in database. Use force_recrawl=True to override.")
+                logger.info(
+                    f"Skipping {url} - already exists in database. Use force_recrawl=True to override."
+                )
                 metadata[crawled_domain]["skipped"].append(url)
                 metadata[crawled_domain]["count"]["skipped"] += 1
                 # successful_urls.append(url)

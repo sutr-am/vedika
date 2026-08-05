@@ -9,8 +9,9 @@ logger.add(
     # 1. REMOVED the <level> wrapper around {message} here
     format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>[FLASH-LLM]</cyan> {message}",
     level="INFO",
-    colorize=True # 2. ADDED this to force colors in Warp/just
+    colorize=True,  # 2. ADDED this to force colors in Warp/just
 )
+
 
 def log_json_dict(data: dict, message: str):
     data_formatted = json.dumps(data, indent=4)

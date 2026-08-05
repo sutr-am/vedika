@@ -84,14 +84,22 @@ lint:
 # Automatically fix lint issues and format code
 [group('code-quality')]
 check-fix-format:
-    @just _run uv run ruff check --select I --fix .
+    @just _run uv run ruff check --select I --fix --show-fixes .
     @just _run uv run ruff format
 
 # Format codebase using ruff
 [group('code-quality')]
 format:
-    # @just _run uv run ruff check --select I --fix .
+    # @just _run uv run ruff check --select I --fix --show-fixes .
     @just _run uv run ruff format
+
+# [group('code-quality')]
+# format_v2:
+#     uv run ruff check --select I --fix --show-fixes .
+#     @echo "\nFormatting files:"
+#     -@uv run ruff format --check . | grep "Would reformat" || true
+#     uv run ruff format .
+
 
 # Shows the tree structure of the CWD without any excluded files
 [group('code-quality')]
