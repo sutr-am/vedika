@@ -1,4 +1,4 @@
-@startuml flash_llm_architecture
+@startuml test
 !pragma layout smetana
 allowmixing
 skinparam linetype polyline
