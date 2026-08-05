@@ -46,7 +46,7 @@ class Settings(BaseModel):
             logger.warning(
                 f"Config file not found at {base_config_path}. Defaulting to Pydantic Settings"
             )
-            return cls(mongo=MongoConfig(host="", db_name=""))  # Fallback
+            return cls(mongo=MongoConfig(host="", db_name=""))  # Fallback #!BUG: should raise error
 
         cfg = OmegaConf.load(base_config_path)
 

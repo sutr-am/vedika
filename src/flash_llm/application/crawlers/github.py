@@ -1,5 +1,4 @@
 import base64
-import os
 
 from github import Auth, Github
 from github.GithubException import GithubException
@@ -9,20 +8,20 @@ from pydantic import UUID4, HttpUrl
 
 from flash_llm.application.crawlers.base import BaseCrawler
 from flash_llm.domain.documents import CodebaseDocumentDomain
-from flash_llm.domain.repositories import DocumentRepository
+from flash_llm.domain.repositories import BaseDocumentRepository
 
 
 class GithubCrawler(BaseCrawler):
     def __init__(
         self,
-        repository: DocumentRepository,
+        repository: BaseDocumentRepository,
+        github_token: str | None,
         ignore=(".git", ".toml", ".lock", ".png", ".jpg", "__pycache__", ".gitignore", ".DS_Store"),
     ) -> None:
         super().__init__(repository)
         self._ignore = ignore
-        token = os.getenv("GITHUB_TOKEN")
-        if token:
-            auth = Auth.Token(token=token)
+        if github_token:
+            auth = Auth.Token(token=github_token)
             self.gh = Github(auth=auth)
         else:
             self.gh = Github()
@@ -61,7 +60,7 @@ class GithubCrawler(BaseCrawler):
                 content_str += header + file_content + footer
         return content_str
 
-    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> None:
+    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> CodebaseDocumentDomain:
         """
         Orchestrates the crwaling process and saves the resulting CodebaseDocument
         """
@@ -86,10 +85,7 @@ class GithubCrawler(BaseCrawler):
                 content=content_str,
                 name=repo_name,
             )
-
-            # 2. Save using the abstract interface
-            self.repository.save_codebase(codebase=domain_doc)
-            logger.success(f"Successfully saved codebase: {repo_name}")
+            return domain_doc
         except GithubException as e:
             logger.exception(f"Failed to crawl {url}: {e}")
             raise e
