@@ -7,14 +7,17 @@ from loguru import logger
 from pydantic import UUID4, HttpUrl
 
 from flash_llm.application.crawlers.base import BaseCrawler
-from flash_llm.domain.documents import CodebaseDocumentDomain
-from flash_llm.domain.repositories import BaseDocumentRepository
+from flash_llm.domain.documents import CodebaseDomain
+from flash_llm.domain.repositories import BaseContentRepository
+from flash_llm.domain.types import DataCategory
 
 
 class GithubCrawler(BaseCrawler):
+    _category: DataCategory = DataCategory.CODEBASES
+
     def __init__(
         self,
-        repository: BaseDocumentRepository,
+        repository: BaseContentRepository,
         github_token: str | None,
         ignore=(".git", ".toml", ".lock", ".png", ".jpg", "__pycache__", ".gitignore", ".DS_Store"),
     ) -> None:
@@ -60,7 +63,7 @@ class GithubCrawler(BaseCrawler):
                 content_str += header + file_content + footer
         return content_str
 
-    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> CodebaseDocumentDomain:
+    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> CodebaseDomain:
         """
         Orchestrates the crwaling process and saves the resulting CodebaseDocument
         """
@@ -76,7 +79,7 @@ class GithubCrawler(BaseCrawler):
             content_str = self._build_content_str(repo, tree)
 
             # 1. Instantiate the pure Domain model
-            domain_doc = CodebaseDocumentDomain(
+            domain_doc = CodebaseDomain(
                 title=f"GitHub - {repo_name}",
                 source_url=HttpUrl(url),
                 platform="github",

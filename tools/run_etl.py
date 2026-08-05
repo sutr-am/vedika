@@ -18,10 +18,11 @@ if __name__ == "__main__":
             logger.warning(f"Config file {cfg_path} does not exist. Skipping...")
             continue
         cfg = OmegaConf.load(cfg_path)
-        print(f"🚀 Triggering the Digital Data ETL Pipeline... for {cfg_path}")
+        logger.info(f"🚀 Triggering the Digital Data ETL Pipeline... for {cfg_path=}")
         digital_data_etl.with_options(enable_cache=False)(
             user_full_name=cfg.parameters.user_full_name,
             links=list(cfg.parameters.links),
         )
+        logger.info(f"\n\n{'---'*30}\n")
 
     print("✅ Pipeline execution finished!")

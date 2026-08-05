@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 
 from pydantic import UUID4
 
-from flash_llm.domain.repositories import BaseDocumentRepository
-from flash_llm.domain.documents import DocumentDomain
+from flash_llm.domain.documents import BaseContentDomain
+from flash_llm.domain.repositories import BaseContentRepository
+from flash_llm.domain.types import DataCategory
 
 
 class BaseCrawler(ABC):
@@ -12,11 +13,13 @@ class BaseCrawler(ABC):
     Uses Dependency Injection to receive a database repository.
     """
 
-    def __init__(self, repository: BaseDocumentRepository) -> None:
+    _category: DataCategory
+
+    def __init__(self, repository: BaseContentRepository) -> None:
         self.repository = repository
 
     @abstractmethod
-    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> DocumentDomain:
+    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> BaseContentDomain:
         """
         Extracts data from the URL and saves it using the Repository.
         """

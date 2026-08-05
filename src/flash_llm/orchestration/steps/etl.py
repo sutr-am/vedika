@@ -1,19 +1,20 @@
-from typing import Annotated
+from typing import Annotated, Any
 from urllib.parse import urlparse
 
 from loguru import logger
 from tqdm import tqdm
 from zenml import get_step_context, step
 
+from flash_llm import log_json_dict
 from flash_llm.application.crawlers.factory import build_crawler_dispatcher
 from flash_llm.domain.documents import UserDomain
-from flash_llm.domain.repositories import BaseDocumentRepository, BaseUserRepository
+from flash_llm.domain.repositories import BaseContentRepository, BaseUserRepository
 from flash_llm.infrastructure.db.factory import get_document_repository, get_user_repository
 
 
 @step
 def get_or_create_user(user_full_name: str) -> Annotated[UserDomain, "user"]:
-    logger.info(f"\nRetrieving or Creating user: {user_full_name}")
+    logger.info(f"Retrieving or Creating user: {user_full_name}")
     first_name, last_name = user_full_name.split(" ", 1)
 
     # 1. Dynamically load the repository via the factory
@@ -35,32 +36,45 @@ def get_or_create_user(user_full_name: str) -> Annotated[UserDomain, "user"]:
 
 
 @step
-def crawl_links(user: UserDomain, links: list[str]) -> Annotated[list[str] | None, "crawled_links"]:
+def crawl_links(user: UserDomain, links: list[str], force_recrawl:bool=False) -> Annotated[list[str] | None, "crawled_links"]:
     crawler_dispatcher = build_crawler_dispatcher()
-    metadata: dict[str, dict[str, int]] = {}
+    metadata: dict[str, dict[str, Any]] = {}
     successful_urls: list[str] = []
 
     for url in tqdm(links, "Crawling links"):
         crawled_domain = urlparse(url).netloc
         if crawled_domain not in metadata:
-            metadata[crawled_domain] = {"successful": 0, "total": 0}
-        metadata[crawled_domain]["total"] += 1
-
+            metadata[crawled_domain] = {"successful": [], "skipped": [], "failed": [], "count": {"successful":0, "skipped":0, "failed":0, "total": 0}}
+        metadata[crawled_domain]["count"]["total"] += 1
         try:
-            # 1 extract teh document
             crawler = crawler_dispatcher.get_crawler(url=url)
-            document = crawler.extract(url=url, user_id=user.id, user_full_name=user.full_name)
 
-            # 2. Get the specific repository for this document's category
-            repository: BaseDocumentRepository = get_document_repository(category=document.category)
+            # Get the specific repository for this document's category
+            repository: BaseContentRepository = get_document_repository(category=crawler._category)
+            if not force_recrawl and repository.exists_by_url(url=url):
+                logger.info(f"Skipping {url} - already exists in database. Use force_recrawl=True to override.")
+                metadata[crawled_domain]["skipped"].append(url)
+                metadata[crawled_domain]["count"]["skipped"] += 1
+                # successful_urls.append(url)
+                continue
+            # Extract the document
+            logger.info(f"Crawling {url=}...")
+            document = crawler.extract(url=url, user_id=user.id, user_full_name=user.full_name)
 
             # 3. Save it using polymorphic method
             repository.save(document)
             successful_urls.append(url)
-            metadata[crawled_domain]["successful"] += 1
+            metadata[crawled_domain]["successful"].append(url)
+            metadata[crawled_domain]["count"]["successful"] += 1
         except Exception as e:
             logger.error(f"Failed to crawl and save {url=}:\n {e}")
+            metadata[crawled_domain]["failed"].append(url)
+            metadata[crawled_domain]["count"]["failed"] += 1
     step_context = get_step_context()
     step_context.add_output_metadata(output_name="crawled_links", metadata=metadata)
-    logger.info(f"\nSuccessfully crawled {successful_urls} / {len(links)} links.")
+    logger.info(f"Successfully crawled {len(successful_urls)} / {len(links)} links.")
+    # logger.info(f"{metadata=}")
+    # print_json(data=metadata)
+    counts_only = {domain: data["count"] for domain, data in metadata.items()}
+    log_json_dict(data=counts_only, message="metadata")
     return successful_urls

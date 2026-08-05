@@ -1,11 +1,11 @@
 import os
 from typing import Union, cast
 
-from flash_llm.domain.repositories import BaseDocumentRepository, BaseUserRepository
+from flash_llm.domain.repositories import BaseContentRepository, BaseUserRepository
 from flash_llm.domain.types import DataCategory
 
 # Type alias for the internal cache
-_Repository = Union[BaseDocumentRepository, BaseUserRepository]
+_Repository = Union[BaseContentRepository, BaseUserRepository]
 _repository_cache: dict[DataCategory, _Repository] = {}
 
 
@@ -53,7 +53,7 @@ def get_user_repository() -> BaseUserRepository:
     return cast(BaseUserRepository, repo)
 
 
-def get_document_repository(category: DataCategory) -> BaseDocumentRepository:
+def get_document_repository(category: DataCategory) -> BaseContentRepository:
     """Fetches the correct Document repository based on the category."""
     if category == DataCategory.USERS:
         raise ValueError("Use get_user_repository() to fetch the User repository.")
@@ -66,4 +66,4 @@ def get_document_repository(category: DataCategory) -> BaseDocumentRepository:
         raise ValueError(f"No document repository registered for {category=}")
 
     # We cast internally so the consumer never has to worry about it
-    return cast(BaseDocumentRepository, repo)
+    return cast(BaseContentRepository, repo)

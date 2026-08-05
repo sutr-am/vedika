@@ -198,6 +198,6 @@ test-all *args: mongo-up
 # Run the ETL service end-to-end
 [group('core-services')]
 etl:
-    @just _run_logged "$ETL_LOGS_FILE" uv run python tools/run_etl.py
+    @just _run_logged "$ETL_LOGS_FILE" ZENML_LOGGING_VERBOSITY=WARN PYTHONPATH=src uv run python tools/run_etl.py
     @{{log}} "[green]✅ Pipeline execution finished![/]"
 

@@ -20,7 +20,7 @@ class UserDomain(BaseModel):
         return f"{self.first_name} {self.last_name}"
 
 
-class DocumentDomain(BaseModel):
+class BaseContentDomain(BaseModel):
     """Abstract base domain entity for all text-based content"""
 
     id: UUID = Field(default_factory=uuid4)
@@ -37,15 +37,15 @@ class DocumentDomain(BaseModel):
         return len(self.content.split())
 
 
-class CodebaseDocumentDomain(DocumentDomain):
+class CodebaseDomain(BaseContentDomain):
     category: Literal[DataCategory.CODEBASES] = DataCategory.CODEBASES
     name: str
 
 
-class ArticleDocumentDomain(DocumentDomain):
+class ArticleDomain(BaseContentDomain):
     category: Literal[DataCategory.ARTICLES] = DataCategory.ARTICLES
 
 
-class PostDocumentDomain(DocumentDomain):
+class PostDomain(BaseContentDomain):
     category: Literal[DataCategory.POSTS] = DataCategory.POSTS
     image: Optional[str]

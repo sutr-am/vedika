@@ -1,10 +1,5 @@
-from flash_llm.domain.documents import (
-    ArticleDocumentDomain,
-    CodebaseDocumentDomain,
-    PostDocumentDomain,
-    UserDomain,
-)
-from flash_llm.domain.repositories import BaseDocumentRepository, BaseUserRepository
+from flash_llm.domain.documents import ArticleDomain, CodebaseDomain, PostDomain, UserDomain
+from flash_llm.domain.repositories import BaseContentRepository, BaseUserRepository
 from flash_llm.infrastructure.db.mongo.documents import (
     ArticleDocument,
     CodebaseDocument,
@@ -13,13 +8,16 @@ from flash_llm.infrastructure.db.mongo.documents import (
 )
 
 
-class MongoCodebaseRepository(BaseDocumentRepository[CodebaseDocumentDomain]):
+class MongoCodebaseRepository(BaseContentRepository[CodebaseDomain]):
     """
     MongoDB concrete implementation of DocumentRepository interface.
     Handles translating between Domain data-models and MongoDB ODM docuemnts.
     """
 
-    def save(self, document: CodebaseDocumentDomain) -> None:
+    def exists_by_url(self, url: str) -> bool:
+        return CodebaseDocument.find(link=url) is not None
+
+    def save(self, document: CodebaseDomain) -> None:
         codebase = document
         db_doc = CodebaseDocument(
             title=codebase.title,
@@ -33,13 +31,16 @@ class MongoCodebaseRepository(BaseDocumentRepository[CodebaseDocumentDomain]):
         db_doc.save()
 
 
-class MongoArticleRepository(BaseDocumentRepository[ArticleDocumentDomain]):
+class MongoArticleRepository(BaseContentRepository[ArticleDomain]):
     """
     MongoDB concrete implementation of DocumentRepository interface.
     Handles translating between Domain data-models and MongoDB ODM docuemnts.
     """
 
-    def save(self, document: ArticleDocumentDomain) -> None:
+    def exists_by_url(self, url: str) -> bool:
+        return ArticleDocument.find(link=url) is not None
+
+    def save(self, document: ArticleDomain) -> None:
         article = document
         db_doc = ArticleDocument(
             title=article.title,
@@ -52,13 +53,16 @@ class MongoArticleRepository(BaseDocumentRepository[ArticleDocumentDomain]):
         db_doc.save()
 
 
-class MongoPostRepository(BaseDocumentRepository[PostDocumentDomain]):
+class MongoPostRepository(BaseContentRepository[PostDomain]):
     """
     MongoDB concrete implementation of DocumentRepository interface.
     Handles translating between Domain data-models and MongoDB ODM docuemnts.
     """
 
-    def save(self, document: PostDocumentDomain) -> None:
+    def exists_by_url(self, url: str) -> bool:
+        return PostDocument.find(link=url) is not None
+
+    def save(self, document: PostDomain) -> None:
         post = document
         db_doc = PostDocument(
             title=post.title,

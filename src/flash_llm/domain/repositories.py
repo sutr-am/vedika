@@ -1,22 +1,21 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from flash_llm.domain.documents import (
-    ArticleDocumentDomain,
-    CodebaseDocumentDomain,
-    DocumentDomain,
-    PostDocumentDomain,
-    UserDomain,
-)
+from flash_llm.domain.documents import BaseContentDomain, UserDomain
 
 # A generic type that is of DocumentDomain or its subclass
-T = TypeVar("T", bound=DocumentDomain)
+T = TypeVar("T", bound=BaseContentDomain)
 
 # A generic type that is of DocumentDomain or its subclass
 U = TypeVar("U", bound=UserDomain)
 
 
-class BaseDocumentRepository(Generic[T], ABC):
+class BaseContentRepository(Generic[T], ABC):
+    @abstractmethod
+    def exists_by_url(self, url:str)->bool:
+        """Check if a document is already stored without fetching the full payload."""
+        pass
+
     @abstractmethod
     def save(self, document: T) -> None:
         """Saves a document to the underlying storage"""
@@ -26,22 +25,4 @@ class BaseDocumentRepository(Generic[T], ABC):
 class BaseUserRepository(Generic[U], ABC):
     @abstractmethod
     def get_or_create_user(self, first_name: str, last_name: str) -> U:
-        pass
-
-
-class DocumentRepository(ABC):
-    @abstractmethod
-    def get_or_create_user(self, first_name: str, last_name: str) -> UserDomain:
-        pass
-
-    @abstractmethod
-    def save_codebase(self, codebase: CodebaseDocumentDomain) -> None:
-        pass
-
-    @abstractmethod
-    def save_article(self, article: ArticleDocumentDomain) -> None:
-        pass
-
-    @abstractmethod
-    def save_post(self, post: PostDocumentDomain) -> None:
         pass
