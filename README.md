@@ -71,4 +71,4 @@ find src -type d -exec touch {}/__init__.py \;
 
 # Architecture
 
-![](./docs/flash_llm_architecture.svg)
+![](./docs/flash_llm_architecture.png)
