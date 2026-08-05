@@ -53,8 +53,14 @@ grebase +message:
 
 # Render architecture diagram to SVG
 [group('docs')]
+svg2png:
+    @just _run rsvg-convert -d 300 -p 300 docs/flash_llm_architecture.svg -o docs/flash_llm_architecture.png
+
+# Render architecture diagram to SVG
+[group('docs')]
 render-diagrams:
     @just _run plantuml -tsvg docs/*.puml
+    just svg2png
 
 # ==============================================================================
 # 📦 Environment & Dependency Recipes
