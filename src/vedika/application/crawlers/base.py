@@ -19,9 +19,7 @@ class BaseCrawler(ABC):
         self.repository = repository
 
     @abstractmethod
-    def extract(
-        self, url: str, user_id: UUID4, user_full_name: str
-    ) -> BaseContentDomain:
+    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> BaseContentDomain:
         """
         Extracts data from the URL and saves it using the Repository.
         """

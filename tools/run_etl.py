@@ -8,9 +8,7 @@ from vedika.orchestration.pipelines.etl import digital_data_etl
 if __name__ == "__main__":
     master_config_path = Path("configs/etl_run_config.yaml")
     if not master_config_path:
-        raise FileNotFoundError(
-            f"Master ETL config file not found at {master_config_path}"
-        )
+        raise FileNotFoundError(f"Master ETL config file not found at {master_config_path}")
 
     master_cfg = OmegaConf.load(master_config_path)
     active_configs: list = master_cfg.active_user_configs

@@ -40,9 +40,7 @@ class GithubCrawler(BaseCrawler):
 
     def _parse_repo_url(self, url: str) -> tuple[str, str]:
         repo_path = (
-            url.replace("https://github.com", "")
-            .replace("http://github.com", "")
-            .strip("/")
+            url.replace("https://github.com", "").replace("http://github.com", "").strip("/")
         )
         repo_name = repo_path.split("/")[-1]
         return repo_path, repo_name
@@ -56,9 +54,7 @@ class GithubCrawler(BaseCrawler):
             # If the API return a list, the it's a dictionary; so we can skip it as its not code
             if isinstance(file_content_encoded, list):
                 return None
-            file_content_decoded = base64.b64decode(
-                file_content_encoded.content
-            ).decode("utf-8")
+            file_content_decoded = base64.b64decode(file_content_encoded.content).decode("utf-8")
             return file_content_decoded
         except (GithubException, UnicodeDecodeError) as e:
             logger.warning(f"Skipped file {file_path} due to error: {e}")

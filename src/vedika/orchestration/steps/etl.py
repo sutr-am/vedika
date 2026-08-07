@@ -60,9 +60,7 @@ def crawl_links(
             crawler = crawler_dispatcher.get_crawler(url=url)
 
             # Get the specific repository for this document's category
-            repository: BaseContentRepository = get_document_repository(
-                category=crawler._category
-            )
+            repository: BaseContentRepository = get_document_repository(category=crawler._category)
             if not force_recrawl and repository.exists_by_url(url=url):
                 logger.info(
                     f"Skipping {url} - already exists in database. Use force_recrawl=True to override."
@@ -73,9 +71,7 @@ def crawl_links(
                 continue
             # Extract the document
             logger.info(f"Crawling {url=}...")
-            document = crawler.extract(
-                url=url, user_id=user.id, user_full_name=user.full_name
-            )
+            document = crawler.extract(url=url, user_id=user.id, user_full_name=user.full_name)
 
             # 3. Save it using polymorphic method
             repository.save(document)
