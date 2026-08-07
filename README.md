@@ -16,7 +16,7 @@ flash_llm/
 │       ├── __init__.py
 │       ├── settings.py           # Centralized Pydantic BaseSettings (.env loader)
 │       │
-│       ├── domain/               # 🛑 Layer 0: Pure entities & schemas (Zero dependencies)
+│       ├── domain/               # Layer 0: Pure entities & schemas (Zero dependencies)
 │       │   ├── __init__.py
 │       │   ├── base.py           # Core entity abstractions
 │       │   ├── documents.py      # Article, Post, Repository models
