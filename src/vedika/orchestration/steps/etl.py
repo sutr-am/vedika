@@ -5,11 +5,11 @@ from loguru import logger
 from tqdm import tqdm
 from zenml import get_step_context, step
 
-from flash_llm import log_json_dict
-from flash_llm.application.crawlers.factory import build_crawler_dispatcher
-from flash_llm.domain.documents import UserDomain
-from flash_llm.domain.repositories import BaseContentRepository, BaseUserRepository
-from flash_llm.infrastructure.db.factory import get_document_repository, get_user_repository
+from vedika import log_json_dict
+from vedika.application.crawlers.factory import build_crawler_dispatcher
+from vedika.domain.documents import UserDomain
+from vedika.domain.repositories import BaseContentRepository, BaseUserRepository
+from vedika.infrastructure.db.factory import get_document_repository, get_user_repository
 
 
 @step

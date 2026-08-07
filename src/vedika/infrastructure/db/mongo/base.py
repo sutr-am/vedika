@@ -7,8 +7,8 @@ from loguru import logger
 from pydantic import UUID4, BaseModel, Field
 from pymongo import errors
 
-from flash_llm.infrastructure.db.mongo.connection import connection
-from flash_llm.settings import settings
+from vedika.infrastructure.db.mongo.connection import connection
+from vedika.settings import settings
 
 T = TypeVar("T", bound="NoSQLBaseDocument")
 

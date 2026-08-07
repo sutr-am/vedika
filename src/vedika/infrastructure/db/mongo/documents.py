@@ -3,8 +3,8 @@ from typing import Optional
 
 from pydantic import UUID4, Field
 
-from flash_llm.domain.types import DataCategory
-from flash_llm.infrastructure.db.mongo.base import NoSQLBaseDocument
+from vedika.domain.types import DataCategory
+from vedika.infrastructure.db.mongo.base import NoSQLBaseDocument
 
 
 class UserDocument(NoSQLBaseDocument):

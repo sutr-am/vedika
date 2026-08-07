@@ -1,8 +1,8 @@
 import os
 from typing import Union, cast
 
-from flash_llm.domain.repositories import BaseContentRepository, BaseUserRepository
-from flash_llm.domain.types import DataCategory
+from vedika.domain.repositories import BaseContentRepository, BaseUserRepository
+from vedika.domain.types import DataCategory
 
 # Type alias for the internal cache
 _Repository = Union[BaseContentRepository, BaseUserRepository]
@@ -15,14 +15,14 @@ def _initialize_repositories() -> None:
     doc_db_type = os.getenv("DOCUMENT_DATABASE_TYPE", "mongo").lower()
 
     if user_db_type == "mongo":
-        from flash_llm.infrastructure.db.mongo.repositories import MongoUserRepository
+        from vedika.infrastructure.db.mongo.repositories import MongoUserRepository
 
         _repository_cache[DataCategory.USERS] = MongoUserRepository()
     else:
         raise ValueError(f"Unsupported user database type: {user_db_type=}")
 
     if doc_db_type == "mongo":
-        from flash_llm.infrastructure.db.mongo.repositories import (
+        from vedika.infrastructure.db.mongo.repositories import (
             MongoArticleRepository,
             MongoCodebaseRepository,
             MongoPostRepository,

@@ -8,7 +8,7 @@ from pymongo import AsyncMongoClient
 async def test_mongo_connection():
     db_url = os.getenv(
         "DATABASE_URL",
-        "mongodb://flash_llm:flash_llm@localhost:27017/flash_llm?authSource=admin",
+        "mongodb://vedika:vedika@localhost:27017/vedika?authSource=admin",
     )
 
     # 1. Connect using native PyMongo Async
@@ -23,11 +23,11 @@ async def test_mongo_connection():
         db = client.get_default_database()
         test_collection = db["test_collection"]
 
-        result = await test_collection.insert_one({"message": "Hello from flash_llm!"})
+        result = await test_collection.insert_one({"message": "Hello from vedika!"})
         assert result.inserted_id is not None
 
         doc = await test_collection.find_one({"_id": result.inserted_id})
-        assert doc["message"] == "Hello from flash_llm!"
+        assert doc["message"] == "Hello from vedika!"
 
         # Clean up test collection
         await test_collection.drop()

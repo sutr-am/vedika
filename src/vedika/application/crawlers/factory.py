@@ -1,9 +1,9 @@
 import os
 
-from flash_llm.application.crawlers.dispatcher import CrawlerDispatcher
-from flash_llm.application.crawlers.github import GithubCrawler
-from flash_llm.domain.types import DataCategory
-from flash_llm.infrastructure.db.factory import get_document_repository
+from vedika.application.crawlers.dispatcher import CrawlerDispatcher
+from vedika.application.crawlers.github import GithubCrawler
+from vedika.domain.types import DataCategory
+from vedika.infrastructure.db.factory import get_document_repository
 
 
 def build_crawler_dispatcher() -> CrawlerDispatcher:

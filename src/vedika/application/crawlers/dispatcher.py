@@ -1,4 +1,4 @@
-from flash_llm.application.crawlers.base import BaseCrawler
+from vedika.application.crawlers.base import BaseCrawler
 
 
 class CrawlerDispatcher:

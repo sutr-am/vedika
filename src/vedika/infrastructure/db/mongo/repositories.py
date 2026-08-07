@@ -1,6 +1,6 @@
-from flash_llm.domain.documents import ArticleDomain, CodebaseDomain, PostDomain, UserDomain
-from flash_llm.domain.repositories import BaseContentRepository, BaseUserRepository
-from flash_llm.infrastructure.db.mongo.documents import (
+from vedika.domain.documents import ArticleDomain, CodebaseDomain, PostDomain, UserDomain
+from vedika.domain.repositories import BaseContentRepository, BaseUserRepository
+from vedika.infrastructure.db.mongo.documents import (
     ArticleDocument,
     CodebaseDocument,
     PostDocument,

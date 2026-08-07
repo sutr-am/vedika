@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from flash_llm.domain.documents import BaseContentDomain, UserDomain
+from vedika.domain.documents import BaseContentDomain, UserDomain
 
 # A generic type that is of DocumentDomain or its subclass
 T = TypeVar("T", bound=BaseContentDomain)

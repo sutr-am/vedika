@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 
 from pydantic import UUID4
 
-from flash_llm.domain.documents import BaseContentDomain
-from flash_llm.domain.repositories import BaseContentRepository
-from flash_llm.domain.types import DataCategory
+from vedika.domain.documents import BaseContentDomain
+from vedika.domain.repositories import BaseContentRepository
+from vedika.domain.types import DataCategory
 
 
 class BaseCrawler(ABC):

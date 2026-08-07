@@ -7,7 +7,7 @@ logger.remove()
 logger.add(
     sys.stderr,
     # 1. REMOVED the <level> wrapper around {message} here
-    format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>[FLASH-LLM]</cyan> {message}",
+    format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>[VEDIKA]</cyan> {message}",
     level="INFO",
     colorize=True,  # 2. ADDED this to force colors in Warp/just
 )

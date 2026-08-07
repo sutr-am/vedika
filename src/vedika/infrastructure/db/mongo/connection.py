@@ -1,7 +1,7 @@
 from loguru import logger
 from pymongo import MongoClient
 
-from flash_llm.settings import settings
+from vedika.settings import settings
 
 
 class MongoDatabaseConnector:

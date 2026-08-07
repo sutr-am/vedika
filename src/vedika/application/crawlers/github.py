@@ -6,10 +6,10 @@ from github.Repository import Repository
 from loguru import logger
 from pydantic import UUID4, HttpUrl
 
-from flash_llm.application.crawlers.base import BaseCrawler
-from flash_llm.domain.documents import CodebaseDomain
-from flash_llm.domain.repositories import BaseContentRepository
-from flash_llm.domain.types import DataCategory
+from vedika.application.crawlers.base import BaseCrawler
+from vedika.domain.documents import CodebaseDomain
+from vedika.domain.repositories import BaseContentRepository
+from vedika.domain.types import DataCategory
 
 
 class GithubCrawler(BaseCrawler):

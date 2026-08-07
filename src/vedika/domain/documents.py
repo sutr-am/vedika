@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from flash_llm.domain.types import DataCategory
+from vedika.domain.types import DataCategory
 
 
 class UserDomain(BaseModel):
