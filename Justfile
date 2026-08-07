@@ -55,6 +55,7 @@ grebase +message:
 [group('docs')]
 svg2png:
     @just _run rsvg-convert -d 600 -p 600 docs/vedika_architecture.svg -o docs/vedika_architecture.png
+    @just _run rsvg-convert -d 600 -p 600 docs/vedika_runtime.svg -o docs/vedika_runtime.png
 
 # Render architecture diagram to SVG
 [group('docs')]

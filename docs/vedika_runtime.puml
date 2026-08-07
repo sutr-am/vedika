@@ -1,0 +1,181 @@
+@startuml vedika_runtime
+title Vedika ETL Pipeline: Runtime Execution Flow
+autonumber
+hide footbox
+
+' ==============================================================================
+' GLOBAL STYLING & NARROW DESIGN
+' ==============================================================================
+skinparam defaultFontName "Fira Code"
+' Or you can use: "Courier New", "Verdana", "Times New Roman", etc.
+
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+skinparam SequenceMessageAlignment center
+skinparam wrapWidth 400
+skinparam maxMessageSize 20400
+
+' Remove the harsh borders from the boxes to reduce visual noise
+skinparam sequenceBoxBorderColor transparent
+
+' Force BOLD arrows and text globally
+skinparam sequenceArrowThickness 3
+skinparam sequenceArrowFontStyle plain
+
+' Make activation lifelines solid black
+skinparam sequenceLifeLineBackgroundColor black
+skinparam sequenceLifeLineBorderColor black
+
+' Elegant Loop/Group Styling
+skinparam sequenceGroupBorderThickness 2
+skinparam sequenceGroupBorderColor #green
+skinparam sequenceGroupBackgroundColor #yellow
+skinparam sequenceGroupHeaderBackgroundColor #fff
+skinparam sequenceGroupHeaderFontColor black
+
+' ==============================================================================
+' ICON MACROS
+' ==============================================================================
+!$ICON_ORCH   = "<&layers>"
+!$ICON_APP    = "<color:red><&bug></color>"
+!$ICON_DOMAIN = "<color:green><&star></color>"
+!$ICON_INFRA  = "<&box>"
+
+' ==============================================================================
+' ARROW MACROS (STYLING EXECUTION FLOW)
+' ==============================================================================
+' Forward calls are pure red, return calls are dashed blue
+!$CALL = "-[#blue]>"
+!$RETURN = "-[#red]>"
+
+' ==============================================================================
+' PARTICIPANTS & DDD BOUNDARIES
+' ==============================================================================
+actor "User / just etl\n<&terminal>" as CLI
+
+box "Orchestration Layer (ZenML)" #LightYellow
+    participant "$ICON_ORCH\n//digital_data_etl//\n(Pipeline)" as Pipeline
+    participant "$ICON_ORCH\nget_or_create_user\n(Step 1)" as Step1
+    participant "$ICON_ORCH\ncrawl_links\n(Step 2)" as Step2
+end box
+
+box "Application Layer" #white
+    participant "$ICON_APP\nCrawlerDispatcher" as Dispatcher
+    participant "$ICON_APP\nGithubCrawler" as Crawler
+end box
+
+box "Infrastructure Layer" #F2F3F4
+    participant "$ICON_INFRA\nDBFactory" as Factory
+    participant "$ICON_INFRA\nMongoUserRepository" as UserRepo
+    participant "$ICON_INFRA\nMongoCodebaseRepository" as DocRepo
+    database "$ICON_INFRA\nMongoDB Storage" as DB
+end box
+
+' ==============================================================================
+' RUNTIME EXECUTION
+' ==============================================================================
+CLI $CALL Pipeline : //Trigger Pipeline Run//
+||5||
+activate Pipeline
+||5||
+
+== Step 1: User Provisioning ==
+||5||
+Pipeline $CALL Step1 : Execute(user_full_name)
+||5||
+activate Step1
+||5||
+
+Step1 $CALL Factory : get_user_repository()
+||5||
+activate Factory
+||5||
+Factory $RETURN Step1 : MongoUserRepository instance
+||5||
+deactivate Factory
+||5||
+
+Step1 $CALL UserRepo : get_or_create_user(first_name, last_name)
+||5||
+activate UserRepo
+||5||
+UserRepo $CALL DB : find / insert user
+activate DB
+||5||
+DB $RETURN UserRepo : DB record
+deactivate DB
+||5||
+UserRepo $RETURN Step1 : $ICON_DOMAIN UserDomain Entity
+||5||
+deactivate UserRepo
+||5||
+
+Step1 $RETURN Pipeline : Returns UserDomain
+||5||
+deactivate Step1
+
+||5||
+== Step 2: Content Extraction & Saving ==
+||5||
+Pipeline $CALL Step2 : Execute(UserDomain, links)
+||5||
+activate Step2
+||5||
+loop for each url in links
+    ||20||
+    Step2 $CALL Dispatcher : get_crawler(url)
+    ||5||
+    activate Dispatcher
+    ||5||
+    Dispatcher $RETURN Step2 : GithubCrawler instance
+    ||5||
+    deactivate Dispatcher
+    ||5||
+
+    Step2 $CALL Crawler : extract(url, user_id)
+    ||5||
+    activate Crawler
+    ||5||
+    Crawler $RETURN Step2 : $ICON_DOMAIN CodebaseDocumentDomain Entity
+    ||5||
+    deactivate Crawler
+    ||5||
+
+    Step2 $CALL Factory : get_document_repository(category)
+    ||5||
+    activate Factory
+    ||5||
+    Factory $RETURN Step2 : MongoCodebaseRepository instance
+    ||5||
+    deactivate Factory
+    ||5||
+
+    Step2 $CALL DocRepo : save(CodebaseDocumentDomain)
+    ||5||
+    activate DocRepo
+    ||5||
+    DocRepo $CALL DocRepo : map to MongoCodebaseDocument
+    ||5||
+    DocRepo $CALL DB : Insert / Upsert Document
+    activate DB
+    ||5||
+    DB $RETURN DocRepo : Success
+    deactivate DB
+    ||5||
+    DocRepo $RETURN Step2 : None
+    ||5||
+    deactivate DocRepo
+
+    ||5||
+end
+
+Step2 $RETURN Pipeline : Returns crawled_links list
+||5||
+deactivate Step2
+||5||
+
+Pipeline $RETURN CLI : Pipeline Execution Finished
+||5||
+deactivate Pipeline
+||5||
+@enduml

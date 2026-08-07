@@ -137,8 +137,8 @@ package "ETL Data Pipeline System" #line:Red;line.bold;back:White {
             + id: UUID = Field(default_factory=uuid4)
             + category: Literal[DataCategory.USERS] = DataCategory.USERS
             + first_name: str
-            + last_name: str
-            + bio: Optional[str] = None
+            # last_name: str
+            ~ bio: Optional[str] = None
             --
             + full_name(): str <<property>>
         }
