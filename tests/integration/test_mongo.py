@@ -8,7 +8,7 @@ from pymongo import AsyncMongoClient
 async def test_mongo_connection():
     db_url = os.getenv(
         "DATABASE_URL",
-        "mongodb://vedika:vedika@localhost:27017/vedika?authSource=admin",
+        "",
     )
 
     # 1. Connect using native PyMongo Async

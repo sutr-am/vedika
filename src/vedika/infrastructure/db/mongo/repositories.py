@@ -1,4 +1,9 @@
-from vedika.domain.documents import ArticleDomain, CodebaseDomain, PostDomain, UserDomain
+from vedika.domain.documents import (
+    ArticleDomain,
+    CodebaseDomain,
+    PostDomain,
+    UserDomain,
+)
 from vedika.domain.repositories import BaseContentRepository, BaseUserRepository
 from vedika.infrastructure.db.mongo.documents import (
     ArticleDocument,
@@ -82,4 +87,6 @@ class MongoUserRepository(BaseUserRepository[UserDomain]):
             db_user = UserDocument(first_name=first_name, last_name=last_name)
             db_user.save()
 
-        return UserDomain(id=db_user.id, first_name=db_user.first_name, last_name=db_user.last_name)
+        return UserDomain(
+            id=db_user.id, first_name=db_user.first_name, last_name=db_user.last_name
+        )

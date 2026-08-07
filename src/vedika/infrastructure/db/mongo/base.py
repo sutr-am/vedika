@@ -39,7 +39,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
         sanitized: dict[str, Any] = {}
         for key, value in filter_options.items():
             target_key = "_id" if key == "id" else key
-            sanitized[target_key] = str(value) if isinstance(value, uuid.UUID) else value
+            sanitized[target_key] = (
+                str(value) if isinstance(value, uuid.UUID) else value
+            )
         return sanitized
 
     @classmethod
@@ -79,7 +81,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
 
         if "_id" not in parsed and "id" in parsed:
             parsed["_id"] = str(parsed.pop("id"))
-        data = {k: (str(v) if isinstance(v, uuid.UUID) else v) for k, v in parsed.items()}
+        data = {
+            k: (str(v) if isinstance(v, uuid.UUID) else v) for k, v in parsed.items()
+        }
         return data
 
     def save(self: T, **kwargs) -> T | None:
@@ -89,7 +93,9 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
         self.updated_at = datetime.now(timezone.utc)
 
         if not doc_id:
-            logger.error(f"Cannot save document of type {self.__class__.__name__} without an id.")
+            logger.error(
+                f"Cannot save document of type {self.__class__.__name__} without an id."
+            )
             return None
 
         try:

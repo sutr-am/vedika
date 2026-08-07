@@ -51,13 +51,17 @@ class Settings(BaseModel):
             logger.warning(
                 f"Config file not found at {base_config_path}. Defaulting to Pydantic Settings"
             )
-            return cls(mongo=MongoConfig(host="", db_name=""))  # Fallback #!BUG: should raise error
+            return cls(
+                mongo=MongoConfig(host="", db_name="")
+            )  # Fallback #!BUG: should raise error
 
         cfg = OmegaConf.load(base_config_path)
 
         # 2. Merge local overides if local.yaml exists
         if local_config_path.exists():
-            logger.info(f"Merging local configuration overrides from {local_config_path}")
+            logger.info(
+                f"Merging local configuration overrides from {local_config_path}"
+            )
             local_cfg = OmegaConf.load(local_config_path)
             cfg = OmegaConf.merge(cfg, local_cfg)
 

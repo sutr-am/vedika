@@ -11,12 +11,18 @@ class MongoDatabaseConnector:
     def get_client(cls) -> MongoClient:
         if cls._instance is None:
             try:
-                cls._instance = MongoClient(settings.mongo.host, serverSelectionTimeoutMS=5000)
+                cls._instance = MongoClient(
+                    settings.mongo.host, serverSelectionTimeoutMS=5000
+                )
                 # verify connection with a ping
                 cls._instance.admin.command("ping")
-                logger.info(f"Successfully connected to MongoDB at {settings.mongo.host}")
+                logger.info(
+                    f"Successfully connected to MongoDB at {settings.mongo.host}"
+                )
             except ConnectionError as e:
-                logger.error(f"Failed to connect to MongoDB at {settings.mongo.host}: {e}")
+                logger.error(
+                    f"Failed to connect to MongoDB at {settings.mongo.host}: {e}"
+                )
                 raise
         return cls._instance
 
