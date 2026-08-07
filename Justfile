@@ -25,7 +25,7 @@ _run_logged log_file +cmd:
 # Run command with a Rich box only (and fail fast on non-zero exit codes)
 _run +cmd:
     @python3 -c 'from rich import print; from rich.panel import Panel; import sys; print(Panel(f"[bold cyan]{sys.argv[1]}[/bold cyan]", title="Executing Command", border_style="blue"))' "{{cmd}}"
-    @{{cmd}}
+    @sh -c '{{cmd}}'
 
 # ==============================================================================
 # 🌿 Git Workflow Recipes
@@ -51,6 +51,17 @@ grebase +message:
     @just _run git push origin 03_data_engineering --force-with-lease
     @just _run git pull
 
+# Render architecture diagram to SVG
+[group('docs')]
+svg2png:
+    @just _run rsvg-convert -d 600 -p 600 docs/flash_llm_architecture.svg -o docs/flash_llm_architecture.png
+
+# Render architecture diagram to SVG
+[group('docs')]
+render-diagrams:
+    @just _run plantuml -tsvg docs/*.puml
+    just svg2png
+
 # ==============================================================================
 # 📦 Environment & Dependency Recipes
 # ==============================================================================
@@ -73,14 +84,22 @@ lint:
 # Automatically fix lint issues and format code
 [group('code-quality')]
 check-fix-format:
-    @just _run uv run ruff check --select I --fix .
+    @just _run uv run ruff check --select I --fix --show-fixes .
     @just _run uv run ruff format
 
 # Format codebase using ruff
 [group('code-quality')]
 format:
-    # @just _run uv run ruff check --select I --fix .
+    # @just _run uv run ruff check --select I --fix --show-fixes .
     @just _run uv run ruff format
+
+# [group('code-quality')]
+# format_v2:
+#     uv run ruff check --select I --fix --show-fixes .
+#     @echo "\nFormatting files:"
+#     -@uv run ruff format --check . | grep "Would reformat" || true
+#     uv run ruff format .
+
 
 # Shows the tree structure of the CWD without any excluded files
 [group('code-quality')]
@@ -187,6 +206,6 @@ test-all *args: mongo-up
 # Run the ETL service end-to-end
 [group('core-services')]
 etl:
-    @just _run_logged "$ETL_LOGS_FILE" uv run python tools/run_etl.py
+    @just _run_logged "$ETL_LOGS_FILE" ZENML_LOGGING_VERBOSITY=WARN PYTHONPATH=src uv run python tools/run_etl.py
     @{{log}} "[green]✅ Pipeline execution finished![/]"
 

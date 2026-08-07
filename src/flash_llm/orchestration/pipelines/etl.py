@@ -1,9 +1,6 @@
-from loguru import logger
 from zenml import pipeline
 
 from flash_llm.orchestration.steps.etl import crawl_links, get_or_create_user
-
-logger.info(">>>>>>>>>>>>>")
 
 
 @pipeline(name="flash_llm_etl")

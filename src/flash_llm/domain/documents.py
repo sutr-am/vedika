@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, HttpUrl
@@ -10,7 +10,7 @@ class UserDomain(BaseModel):
     """Core domain entity representing a user"""
 
     id: UUID = Field(default_factory=uuid4)
-    category: DataCategory = DataCategory.USERS
+    category: Literal[DataCategory.USERS] = DataCategory.USERS
     first_name: str
     last_name: str
     bio: Optional[str] = None
@@ -20,7 +20,7 @@ class UserDomain(BaseModel):
         return f"{self.first_name} {self.last_name}"
 
 
-class DocumentDomain(BaseModel):
+class BaseContentDomain(BaseModel):
     """Abstract base domain entity for all text-based content"""
 
     id: UUID = Field(default_factory=uuid4)
@@ -37,15 +37,15 @@ class DocumentDomain(BaseModel):
         return len(self.content.split())
 
 
-class CodebaseDocumentDomain(DocumentDomain):
-    category: DataCategory = DataCategory.CODEBASES
+class CodebaseDomain(BaseContentDomain):
+    category: Literal[DataCategory.CODEBASES] = DataCategory.CODEBASES
     name: str
 
 
-class ArticleDocumentDomain(DocumentDomain):
-    category: DataCategory = DataCategory.ARTICLES
+class ArticleDomain(BaseContentDomain):
+    category: Literal[DataCategory.ARTICLES] = DataCategory.ARTICLES
 
 
-class PostDocumentDomain(DocumentDomain):
-    category: DataCategory = DataCategory.POSTS
+class PostDomain(BaseContentDomain):
+    category: Literal[DataCategory.POSTS] = DataCategory.POSTS
     image: Optional[str]

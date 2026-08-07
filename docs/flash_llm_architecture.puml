@@ -1,0 +1,287 @@
+@startuml flash_llm_architecture
+!pragma layout smetana
+allowmixing
+skinparam linetype polyline
+skinparam packageTitleAlignment center
+skinparam ArrowMessageAlignment center
+skinparam ArrowFontName Arial
+
+' ==============================================================================
+' GLOBAL LAYOUT & SPACING
+' ==============================================================================
+skinparam nodesep 20
+skinparam ranksep 20
+
+<style>
+package {
+    Padding 8
+}
+class {
+    Padding 8
+}
+interface {
+    Padding 8
+}
+package<<System>> {
+    LineStyle 2
+    LineColor #000
+    BackgroundColor transparent
+    Margin 20
+}
+package {
+    Padding 8
+    LineColor #000
+}
+arrow {
+    LineThickness 2
+    LineColor #000
+    FontColor #000
+    FontSize 12
+}
+</style>
+
+' ==============================================================================
+' ICON MACROS
+' ==============================================================================
+!$ICON_CONFIG = "<&cog> "
+!$ICON_ORCH   = "<&layers> "
+!$ICON_APP    = "<color:red><&bug></color> "
+!$ICON_DOMAIN = "<color:green><&star></color> "
+!$ICON_INFRA  = "<&box> "
+
+' ==============================================================================
+' ARROW MACROS (BOLD & STYLED)
+' ==============================================================================
+!$USE = ".[bold].>"
+!$FLOW = "-[bold]->"
+!$EXTENDS = "-[bold]-|>"
+!$HEAVY_FLOW = "-[thickness=3]->"
+!$IMPLEMENTS = ".[bold].|>"
+!$COMPOSES = "*-[bold]->"
+!$AGGREGATES_RED = "o-[#red,bold]->"
+!$IMPLEMENTS_RED = ".[#red,bold].|>"
+!$EXTENDS_BLUE_AGG = "o-[#blue,bold]-|>"
+!$EXTENDS_RED_COMP = "*-[#red,bold]-|>"
+
+' ==============================================================================
+' SYSTEM BOUNDARY
+' ==============================================================================
+package "ETL Data Pipeline System" #line:Red;line.bold;back:White {
+
+    ' ==============================================================================
+    ' CONFIGURATION & ENTRY LAYER
+    ' ==============================================================================
+    package "$ICON_CONFIG Configuration & Entry Layer" #line:DarkGreen;line.bold;back:LightGreen {
+        class "run_etl.py / Justfile" as Entrypoint <<Orchestrator>> {
+            Triggers execution environment
+        }
+
+        class Settings <<pydantic.BaseModel>> {
+            + database_type: Literal['mongo', 'postgres']
+            - mongo: Optional[MongoConfig]
+            + load_settings(): Settings
+        }
+    }
+
+    ' ==============================================================================
+    ' ORCHESTRATION LAYER (ZENML)
+    ' ==============================================================================
+    package "$ICON_ORCH Orchestration Layer (ZenML)" #line:Gray;line.bold {
+        class "Pipeline: digital_data_etl" as Pipeline <<@pipeline>> #line:blue;line.bold;back:LightYellow {
+            + with_options(enable_cache=False)
+        }
+
+        class "Step: get_or_create_user" as Step1 <<@step>> {
+            + get_or_create_user(user_full_name: str): Annotated[UserDomain, "user"]
+        }
+
+        class "Step: crawl_links" as Step2 <<@step>> {
+            + crawl_links(user: UserDomain, links: list[str]): Annotated[list[str] | None, "crawled_links"]
+        }
+    }
+
+    ' ==============================================================================
+    ' APPLICATION LAYER (CRAWLERS)
+    ' ==============================================================================
+    package "$ICON_APP Application Layer" {
+        class CrawlerFactory {
+            + build_crawler_dispatcher(): CrawlerDispatcher
+        }
+
+        class CrawlerDispatcher {
+            + get_crawler(url: str): BaseCrawler
+        }
+
+        abstract class BaseCrawler {
+            + extract(url: str, user_id: UUID, user_full_name: str): DocumentDomain
+        }
+
+        class GithubCrawler {
+            + extract(url: str, user_id: UUID, user_full_name: str): CodebaseDocumentDomain
+        }
+    }
+
+    ' ==============================================================================
+    ' DOMAIN LAYER (CORE BUSINESS LOGIC)
+    ' ==============================================================================
+    package "$ICON_DOMAIN Domain Layer (Pure Python)" #line:Blue;line.bold;back:LightCyan {
+        enum DataCategory <<StrEnum>> {
+            USERS
+            CODEBASES
+            ARTICLES
+            POSTS
+        }
+
+        ' Entities
+        class UserDomain <<BaseModel>> {
+            + id: UUID = Field(default_factory=uuid4)
+            + category: Literal[DataCategory.USERS] = DataCategory.USERS
+            + first_name: str
+            + last_name: str
+            + bio: Optional[str] = None
+            --
+            + full_name(): str <<property>>
+        }
+
+        abstract class DocumentDomain <<BaseModel>> {
+            + id: UUID = Field(default_factory=uuid4)
+            + title: str
+            + category: DataCategory
+            + source_url: HttpUrl
+            + platform: str
+            + author_id: UUID
+            + author_full_name: str
+            + content: str
+            --
+            + word_count(): int <<property>>
+        }
+
+        class CodebaseDocumentDomain <<DocumentDomain>> {
+            + category: Literal[DataCategory.CODEBASES] = DataCategory.CODEBASES
+            + name: str
+        }
+
+        ' Interfaces
+        interface BaseUserRepository<<Generic[U]>> {
+            + get_or_create_user(first_name: str, last_name: str): U
+        }
+
+        interface BaseDocumentRepository<<Generic[T]>> {
+            + save(document: T): None
+        }
+    }
+
+    ' ==============================================================================
+    ' INFRASTRUCTURE LAYER (ADAPTERS & DB)
+    ' ==============================================================================
+    package "$ICON_INFRA Infrastructure Layer" {
+        class DBFactory <<Singleton>> {
+            - _repository_cache: dict[DataCategory, Repository]
+            - _initialize_repositories(): None
+            + get_user_repository(): BaseUserRepository
+            + get_document_repository(category: DataCategory): BaseDocumentRepository
+        }
+
+        class MongoUserRepository {
+            + get_or_create_user(first_name: str, last_name: str): UserDomain
+        }
+
+        class MongoCodebaseRepository {
+            + save(document: CodebaseDocumentDomain): None
+        }
+
+        abstract class NoSQLBaseDocument <<BaseModel>> {
+            + save(**kwargs): Self | None
+            + to_mongo(**kwargs): dict
+            + _get_collection(): Collection
+        }
+
+        abstract class MongoDocument <<NoSQLBaseDocument>> {
+            + title: str
+            + link: str
+            + platform: str
+            + author_id: UUID4 = Field(alias="author_id")
+            + author_full_name: str = Field(alias="author_full_name")
+            + content: str
+            --
+            + Settings.collection_name = "_abstract_document_"
+        }
+
+        class MongoUserDocument <<NoSQLBaseDocument>> {
+            + first_name: str
+            + last_name: str
+            --
+            + full_name(): str <<property>>
+            + Settings.collection_name = DataCategory.USERS
+        }
+
+        class MongoCodebaseDocument <<MongoDocument>> {
+            + codebase_name: str
+            --
+            + Settings.collection_name = DataCategory.CODEBASES
+        }
+
+        database "MongoDB Storage\n(Collections via DataCategory)\n" as Database
+    }
+}
+
+' ==============================================================================
+' RELATIONSHIPS & DATA FLOW
+' ==============================================================================
+
+' Execution Flow
+Entrypoint $FLOW Pipeline : "Triggers"
+Entrypoint $FLOW Settings : "Loads"
+Pipeline $COMPOSES Step1
+Pipeline $COMPOSES Step2
+
+' Step 1 (User Flow)
+Step1 $FLOW DBFactory : "1. get_user_repository()"
+Step1 $FLOW BaseUserRepository : "2. get_or_create_user(...)"
+
+' Step 2 (Crawler Flow)
+Step2 $FLOW CrawlerFactory : "3. build_crawler_dispatcher()"
+CrawlerFactory $FLOW CrawlerDispatcher : "Instantiates"
+CrawlerDispatcher $FLOW GithubCrawler : "Routes Github URLs"
+GithubCrawler $USE CodebaseDocumentDomain : "4. Extracts Domain Entity"
+
+' Step 2 (Save Flow)
+Step2 $FLOW DBFactory : "5. get_document_repository(category)"
+Step2 $FLOW BaseDocumentRepository : "6. save(document)"
+
+' Infrastructure Implementations (Factory)
+DBFactory $USE MongoUserRepository : "Caches & Returns"
+DBFactory $USE MongoCodebaseRepository : "Caches & Returns"
+
+' Interface Fulfillment
+MongoUserRepository $IMPLEMENTS_RED BaseUserRepository
+MongoCodebaseRepository $IMPLEMENTS_RED BaseDocumentRepository
+
+' Infrastructure Mapping
+MongoUserRepository $USE MongoUserDocument : "Maps Domain to ODM"
+MongoCodebaseRepository $USE MongoCodebaseDocument : "Maps Domain to ODM"
+NoSQLBaseDocument $AGGREGATES_RED Database : "PyMongo Operations"
+
+' Domain & ODM Inheritance
+CodebaseDocumentDomain $EXTENDS_BLUE_AGG DocumentDomain
+GithubCrawler $EXTENDS_BLUE_AGG BaseCrawler
+MongoUserDocument $EXTENDS_BLUE_AGG NoSQLBaseDocument
+MongoDocument $EXTENDS_BLUE_AGG NoSQLBaseDocument
+MongoCodebaseDocument $EXTENDS_RED_COMP MongoDocument
+DocumentDomain $USE DataCategory : "Uses"
+
+' ==============================================================================
+' DIAGRAM LEGEND
+' ==============================================================================
+legend bottom right
+    | = Icon / Line Type | = Meaning & System Usage |
+    | 🟢 **C** (Green Circle) | **Concrete Class:** Can be instantiated. |
+    | 🔵 **A** (Blue Circle) | **Abstract Class:** Base class for inheritance. |
+    | 🟣 **I** (Purple Circle) | **Interface:** A structural contract (e.g., BaseRepositories). |
+    | ◁-- (Solid Triangle) | **Inherits:** Shows child inheriting from parent. |
+    | ◁.. (Dashed Triangle)| **Implements:** Shows concrete adapter fulfilling Interface. |
+    | --> (Solid Arrow) | **Execution Flow:** Chronological action or direct trigger. |
+    | ..> (Dashed Arrow) | **Dependency:** Data mapping or instantiation without strict coupling. |
+endlegend
+
+@enduml
