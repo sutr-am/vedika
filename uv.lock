@@ -594,49 +594,6 @@ wheels = [
 ]
 
 [[package]]
-name = "flash-llm"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "loguru" },
-    { name = "omegaconf" },
-    { name = "pydantic" },
-    { name = "pygithub" },
-    { name = "pymongo" },
-    { name = "python-dotenv" },
-    { name = "tqdm" },
-    { name = "zenml", extra = ["server"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "rich-cli" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "omegaconf", specifier = ">=2.3.1" },
-    { name = "pydantic", specifier = ">=2.12.5" },
-    { name = "pygithub", specifier = ">=2.9.1" },
-    { name = "pymongo", specifier = ">=4.17.0" },
-    { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "tqdm", specifier = ">=4.70.0" },
-    { name = "zenml", extras = ["server"], specifier = ">=0.96.2" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=9.1.1" },
-    { name = "pytest-asyncio", specifier = ">=1.4.0" },
-    { name = "rich-cli", specifier = ">=1.8.1" },
-    { name = "ruff", specifier = ">=0.16.0" },
-]
-
-[[package]]
 name = "frozenlist"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
