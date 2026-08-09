@@ -1,138 +1,88 @@
-@startuml vedika_unified_blueprint
-title Vedika ETL Pipeline: Unified Architecture & Execution Flow
-hide footbox
+@startmindmap
+* root node
 
-' Master layout spacing
-skinparam ParticipantPadding 40
-skinparam BoxPadding 20
-skinparam NoteBackgroundColor #F8F9F9
-skinparam NoteBorderColor #BDC3C7
+** some first level node
+***_ second level node
+***_ another second level node
+***_ foo
+***_ bar
+***_ foobar
 
-box "Vedika System Blueprint" #FFFFFF
-    participant "Domain & Infrastructure\n(Structural View)" as Struct #D4E6F1
-    participant "ETL Pipeline\n(Runtime View)" as Runtime #FADBD8
-end box
+** another first level node
+***_ second level node
+***_ another second level node
+***_ foo
+***_ bar
+***_ foobar
+***_ second level node
+***_ another second level node
+***_ foo
+***_ bar
+***_ foobar
 
-== 1. Structural Architecture ==
 
-Struct -> Struct : System Layout
-activate Struct #2980B9
-rnote over Struct
-{{
-    allowmixing
-    skinparam packageTitleAlignment center
-    skinparam nodesep 30
-    skinparam ranksep 40
+** another first level node
+***_ second level node
+***_ another second level node
+***_ foo
+***_ bar
+***_ foobar
+***_ second level node
+***_ another second level node
+***_ foo
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobarnbnbnbnbnbnbnjbkbkbkj ❤️
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
 
-    package "Application Layer" {
-        class "digital_data_etl" as Pipeline <<Pipeline>>
-        class "get_or_create_user" as Step1 <<Step>>
-        class "crawl_links" as Step2 <<Step>>
-        class CrawlerDispatcher
-        class GithubCrawler
+***_ bar
+***_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
+****_ foobar
 
-        Pipeline *-- Step1
-        Pipeline *-- Step2
-        Step2 ..> CrawlerDispatcher : uses
-        CrawlerDispatcher --> GithubCrawler : routes
-    }
 
-    package "Domain Layer" {
-        class UserDomain
-        class CodebaseDocumentDomain
-        interface BaseUserRepository
-        interface BaseDocumentRepository
-    }
 
-    package "Infrastructure Layer" {
-        class DBFactory
-        class MongoUserRepository
-        class MongoCodebaseRepository
 
-        DBFactory --> MongoUserRepository : instantiates
-        DBFactory --> MongoCodebaseRepository : instantiates
-        MongoUserRepository ..|> BaseUserRepository
-        MongoCodebaseRepository ..|> BaseDocumentRepository
-    }
 
-    ' Cross-Layer Connections
-    Step1 ..> DBFactory : uses
-    Step2 ..> DBFactory : uses
-    GithubCrawler ..> CodebaseDocumentDomain : extracts
-    MongoUserRepository ..> UserDomain : maps
-    MongoCodebaseRepository ..> CodebaseDocumentDomain : maps
-}}
-end rnote
-deactivate Struct
 
-== 2. Runtime Execution Flow ==
 
-Runtime -> Runtime : just etl
-activate Runtime #C0392B
-rnote over Runtime
-{{
-    autonumber
-    hide footbox
-    skinparam ParticipantPadding 15
 
-    actor "User" as CLI
-    participant "digital_data_etl" as PL
-    participant "get_or_create_user" as S1
-    participant "DBFactory" as Fact
-    participant "MongoUserRepository" as Repo
-    database "MongoDB" as DB
+caption figure 1
+title My super title
+*_ <&flag>Debian
+**_ <&globe>Ubuntu
+*** Linux Mint
+*** Kubuntu
+*** Lubuntu
+*** KDE Neon
+** <&graph>LMDE
+** <&pulse>SolydXK
+** <&people>SteamOS
+** <&star>Raspbian with a very long name
+*** <s>Raspmbc</s> => OSMC
+*** <s>Raspyfi</s> => Volumio
+header
+My super header
+endheader
+center footer My super footer
+legend right
+Short
+legend
+endlegend
 
-    CLI -> PL : Trigger Pipeline
-    activate PL
-
-    PL -> S1 : execute(user)
-    activate S1
-    S1 -> Fact : get_user_repository()
-    activate Fact
-    Fact --> S1 : instance
-    deactivate Fact
-
-    S1 -> Repo : get_or_create_user()
-    activate Repo
-    Repo -> DB : find / insert
-    DB --> Repo : record
-    Repo --> S1 : UserDomain Entity
-    deactivate Repo
-
-    S1 --> PL : Returns User
-    deactivate S1
-
-    participant "crawl_links" as S2
-    participant "GithubCrawler" as Crawl
-    participant "MongoCodebaseRepository" as DocRepo
-
-    PL -> S2 : execute(user, links)
-    activate S2
-
-    S2 -> Crawl : extract(url)
-    activate Crawl
-    Crawl --> S2 : CodebaseDocumentDomain
-    deactivate Crawl
-
-    S2 -> Fact : get_document_repository()
-    activate Fact
-    Fact --> S2 : instance
-    deactivate Fact
-
-    S2 -> DocRepo : save(CodebaseDocumentDomain)
-    activate DocRepo
-    DocRepo -> DB : insert document
-    DB --> DocRepo : success
-    DocRepo --> S2 : None
-    deactivate DocRepo
-
-    S2 --> PL : Returns list
-    deactivate S2
-
-    PL --> CLI : Finished
-    deactivate PL
-}}
-end rnote
-deactivate Runtime
-
-@enduml
+@endmindmap

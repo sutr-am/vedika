@@ -5,6 +5,5 @@ mongo:
     host: "mongodb://${oc.env:MONGO_USER}:${oc.env:MONGO_PASSWORD}@${oc.env:MONGO_HOST_IP}:${oc.env:MONGO_PORT}"
     db_name: "${oc.env:MONGO_DB_NAME}"
 
-# qdrant:
-#     host: "${oc.env:QDRANT_HOST}"
-#     port: ${oc.env:QDRANT_PORT}
+qdrant:
+    host: "http://${oc.env:QDRANT_HOST_IP}:${oc.env:QDRANT_PORT}"
