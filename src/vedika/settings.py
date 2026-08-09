@@ -21,25 +21,18 @@ CONFIGS_DIR = PROJECT_ROOT / "configs"
 
 
 class MongoConfig(BaseModel):
-    # Remove hardcoded defaults; Pydantic will now fail if base.yaml doesn't provide these
     host: str
     db_name: str
 
 
-# class QdrantConfig(BaseModel):
-#     host: str
-#     port: str
-
-
-# class QdrantConfig(BaseModel):
-#     host: str
-#     port: str
+class QdrantConfig(BaseModel):
+    host: str
 
 
 class Settings(BaseModel):
     # database_name: Literal["mongo", "qdrant"] = "mongo"
     mongo: MongoConfig
-    # qdrant: Optional[QdrantConfig] = None
+    qdrant: QdrantConfig
 
     @classmethod
     def load_settings(cls, config_name: str = "base.yaml") -> Self:
@@ -51,7 +44,8 @@ class Settings(BaseModel):
             logger.warning(
                 f"Config file not found at {base_config_path}. Defaulting to Pydantic Settings"
             )
-            return cls(mongo=MongoConfig(host="", db_name=""))  # Fallback #!BUG: should raise error
+            # Fallback #!BUG: should raise error
+            return cls(mongo=MongoConfig(host="", db_name=""), qdrant=QdrantConfig(host=""))
 
         cfg = OmegaConf.load(base_config_path)
 

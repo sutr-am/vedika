@@ -35,4 +35,4 @@ class MongoDatabaseConnector:
             logger.info(f"Connection closed to MongoDB at {settings.mongo.host}")
 
 
-connection = MongoDatabaseConnector()
+mongo_connection = MongoDatabaseConnector()

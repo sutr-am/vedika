@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import UUID4, BaseModel, Field
 from pymongo import errors
 
-from vedika.infrastructure.db.mongo.connection import connection
+from vedika.infrastructure.db.mongo.connection import mongo_connection
 from vedika.settings import settings
 
 T = TypeVar("T", bound="NoSQLBaseDocument")
@@ -44,7 +44,7 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
 
     @classmethod
     def _get_database(cls):
-        return connection.get_database(settings.mongo.db_name)
+        return mongo_connection.get_database(settings.mongo.db_name)
 
     @classmethod
     def _get_collection(cls):
