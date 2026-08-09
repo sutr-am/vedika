@@ -3,7 +3,7 @@ from pathlib import Path
 from loguru import logger
 from omegaconf import OmegaConf
 
-from flash_llm.orchestration.pipelines.etl import digital_data_etl
+from vedika.orchestration.pipelines.etl import digital_data_etl
 
 if __name__ == "__main__":
     master_config_path = Path("configs/etl_run_config.yaml")

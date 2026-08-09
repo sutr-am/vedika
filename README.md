@@ -1,7 +1,7 @@
 # Project structure
 
 ```text
-flash_llm/
+vedika/
 ├── .github/                      # CI/CD workflows (GitHub Actions, Docker builds)
 ├── configs/                      # ZenML YAML configs & environment profiles
 │   ├── etl.yaml
@@ -12,7 +12,7 @@ flash_llm/
 │   └── Dockerfile.api
 │
 ├── src/
-│   └── flash_llm/                # Core Python Package
+│   └── vedika/                # Core Python Package
 │       ├── __init__.py
 │       ├── settings.py           # Centralized Pydantic BaseSettings (.env loader)
 │       │
@@ -71,4 +71,5 @@ find src -type d -exec touch {}/__init__.py \;
 
 # Architecture
 
-![](./docs/flash_llm_architecture.png)
+![](./docs/vedika_architecture.png)
+![](./docs/vedika_runtime.png)

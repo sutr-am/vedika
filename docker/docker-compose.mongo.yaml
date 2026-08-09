@@ -1,7 +1,7 @@
 services:
     mongodb:
         image: mongo:latest
-        container_name: flash_llm_mongo
+        container_name: vedika_mongo
         restart: always
         ports:
             - "27017:27017"
