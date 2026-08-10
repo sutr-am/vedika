@@ -9,10 +9,7 @@ from vedika import log_json_dict
 from vedika.application.crawlers.factory import build_crawler_dispatcher
 from vedika.domain.documents import UserDomain
 from vedika.domain.repositories import BaseContentRepository, BaseUserRepository
-from vedika.infrastructure.db.factory import (
-    get_document_repository,
-    get_user_repository,
-)
+from vedika.infrastructure.db.factory import get_document_repository, get_user_repository
 
 
 @step
