@@ -4,7 +4,7 @@ services:
         container_name: vedika_mongo
         restart: always
         ports:
-            - "27017:27017"
+            - "${MONGO_PORT:-27017}:27017"
         environment:
             # Map the reserved MongoDB keys to your custom .env variables
             MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
@@ -13,5 +13,16 @@ services:
         volumes:
             - mongo_data:/data/db
 
+    qdrant:
+        image: qdrant/qdrant:latest
+        container_name: vedika_qdrant
+        restart: always
+        ports:
+            - "${QDRANT_PORT:-6333}:6333"
+            - "6334:6334" # gRPC port
+        volumes:
+            - qdrant_data:/qdrant/storage
+
 volumes:
     mongo_data:
+    qdrant_data:

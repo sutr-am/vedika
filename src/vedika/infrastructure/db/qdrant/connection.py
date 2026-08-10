@@ -1,19 +1,17 @@
 from loguru import logger
 from qdrant_client import QdrantClient
 
-from vedika import settings
+from vedika.settings import settings
 
 
 class QdrantDatabaseConnector:
-    _instance: QdrantClient|None = None
+    _instance: QdrantClient | None = None
 
     @classmethod
-    def get_client(cls)->QdrantClient:
+    def get_client(cls) -> QdrantClient:
         if cls._instance is None:
             try:
-                cls._instance = QdrantClient(
-                    host=settings.qdrant.host
-                )
+                cls._instance = QdrantClient(host=settings.qdrant.host)
 
                 # verify connection by fetching collection
                 _ = cls._instance.get_collections()
@@ -29,5 +27,6 @@ class QdrantDatabaseConnector:
             cls._instance.close()
             cls._instance = None
             logger.info(f"Connection closed to Qdrant at {settings.qdrant.host = }")
+
 
 qdrant_connection = QdrantDatabaseConnector()

@@ -2,8 +2,10 @@
 set dotenv-load
 
 # Variables
-compose_file := "docker/docker-compose.mongo.yaml"
+compose_file := "docker/docker-compose.yaml"
 env_file := ".env"
+dc := "docker compose --env-file " + env_file + " -f " + compose_file
+
 
 # Global Logging Utilities
 log := "uv run rich --print"
@@ -110,31 +112,35 @@ tree:
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes
 # ==============================================================================
+# Target a specific database by passing its service name ('mongodb' or 'qdrant').
+# If no name is provided, the command applies to ALL databases simultaneously.
 
-# Build and spin up MongoDB container in the background (preserves data)
+# Build and spin up container(s)
 [group('database')]
-mongo-up:
-    @just _run docker compose --env-file {{env_file}} -f {{compose_file}} up -d --build
+db-up service="":
+    @just _run "{{dc}} up -d --build {{service}}"
 
-# Stop and remove MongoDB container (data volume remains safe)
+# Stop and remove container(s) safely (leaves the network running for other DBs)
 [group('database')]
-mongo-down:
-    @just _run docker compose --env-file {{env_file}} -f {{compose_file}} down
+db-down service="":
+    @just _run "{{dc}} rm -s -f {{service}}"
 
-# Stream real-time MongoDB container logs
+# Stream real-time logs
 [group('database')]
-mongo-logs:
-    docker compose --env-file {{env_file}} -f {{compose_file}} logs -f
+db-logs service="":
+    {{dc}} logs -f {{service}}
 
-# Soft restart MongoDB container (reboots service without losing data)
+# Soft restart container(s) without losing data
 [group('database')]
-mongo-restart: mongo-down mongo-up
+db-restart service="":
+    just db-down {{service}}
+    just db-up {{service}}
 
-# Hard reset MongoDB (deletes database volume and starts fresh from scratch)
+# Hard reset EVERYTHING (Global kill switch - deletes all database volumes!)
 [group('database')]
-mongo-reset:
-    docker compose --env-file {{env_file}} -f {{compose_file}} down -v
-    just mongo-up
+db-reset-all:
+    @just _run "{{dc}} down -v"
+    just db-up
 
 # ==============================================================================
 # 🚀 ZenML Lifecycle Recipes
@@ -166,13 +172,13 @@ clean:
 
 # Stop everything, clean artifacts, sync dependencies, and start all services fresh
 [group('maintenance')]
-restart-all: mongo-down zenml-down clean sync format mongo-up zenml-up
+restart-all: db-down zenml-down clean sync format db-up zenml-up
     @just _run echo "All services successfully restarted and fresh!"
 
 
 # Stop everything, clean artifacts, and sync dependencies
 [group('maintenance')]
-stop-all: mongo-down zenml-down
+stop-all: db-down zenml-down
     @just _run echo "All services successfully shut down"
 
 # ==============================================================================
@@ -180,25 +186,32 @@ stop-all: mongo-down zenml-down
 # 🧪 Testing & Execution Recipes
 # ==============================================================================
 
-# Run fast unit tests only (no MongoDB required)
+# Run fast unit tests only (no DB required)
 [group('testing')]
 test-unit *args:
     @just _run uv run pytest -vv tests/unit {{args}}
 
-# Run integration/DB tests (automatically spins up MongoDB)
+# Run integration/DB tests (automatically spins up all DB)
 [group('testing')]
-test-integration *args: mongo-up
-    @just _run uv run pytest -vv tests/integration {{args}}
+test-integration *args: db-up
+    @just _run "uv run pytest -vv tests/integration {{args}}"
 
-# Run ETL-related tests (spins up MongoDB for pipeline-backed tests)
+
+# Run ETL-related tests (spins up all DB for pipeline-backed tests)
 [group('testing')]
-test-run-etl *args: mongo-up
+test-run-etl *args: db-up
     @just _run uv run pytest -vv tests -k "run_etl or etl" {{args}}
 
-# Run ALL tests (spins up MongoDB)
+# Run ALL tests (spins up all DB)
 [group('testing')]
-test-all *args: mongo-up
+test-all *args: db-up
     @just _run uv run pytest -vv {{args}}
+
+# Run all tests or pass a specific path (e.g., just test tests/infrastructure/)
+[group('testing')]
+test path="tests/":
+    @just _run uv run pytest {{path}} -v
+
 
 # ==============================================================================
 # ⚙️ Execution Recipes
