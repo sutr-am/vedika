@@ -49,4 +49,19 @@ class QdrantBaseDocument(BaseModel, Generic[T], ABC):
         return PointStruct(id=_id, vector=vector, payload=parsed)
 
     def save(self: T, **kwargs) -> T | None:
-        pass
+        """Persists the infrastructure document to QDrant"""
+        from loguru import logger
+
+        from vedika.infrastructure.db.qdrant.connection import qdrant_connection
+
+        client = qdrant_connection.get_client()
+        collection_name = self.get_collection_name()
+        point = self.to_point(**kwargs)
+
+        try:
+            client.upsert(collection_name=collection_name, points=[point,])
+            logger.success(f"Successfully upsert-ed point into {collection_name=}")
+            return self
+        except Exception as e:
+            logger.error(f"Failed to upsert document in {collection_name=}: {e}")
+            return None
