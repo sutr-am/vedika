@@ -1,10 +1,7 @@
-from abc import ABC
-from typing import Optional
-
 from pydantic import UUID4, Field
 
-from vedika.domain.types import DataCategory
 from vedika.infrastructure.db.mongo.base import NoSQLBaseDocument
+from vedika.settings import settings
 
 
 class UserDocument(NoSQLBaseDocument):
@@ -12,44 +9,37 @@ class UserDocument(NoSQLBaseDocument):
     last_name: str
 
     class Settings:
-        collection_name: DataCategory = DataCategory.USERS
+        _route = settings.storage_routes.users
+        connection_name: str = _route.connection
+        collection_name: str = _route.target
 
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
 
-class Document(NoSQLBaseDocument, ABC):
-    """
-    Abstract infrastructure base.
-    Mirrors fields in DocumentDomain
-    """
-
+class CodebaseDocument(NoSQLBaseDocument):
     title: str
     link: str
+    codebase_name: str
+    content: str
     platform: str
     author_id: UUID4 = Field(alias="author_id")
     author_full_name: str = Field(alias="author_full_name")
-    content: str
 
     class Settings:
-        collection_name = "_abstract_document_"
+        _route = settings.storage_routes.get_route("codebases", "raw")
+        connection_name: str = _route.connection
+        collection_name: str = _route.target
 
 
-class CodebaseDocument(Document):
-    codebase_name: str
+class CleanedCodebaseDocument(NoSQLBaseDocument):
+    content: str
+    platform: str
+    author_id: UUID4 = Field(alias="author_id")
+    author_full_name: str = Field(alias="author_full_name")
 
-    class Settings(Document.Settings):
-        collection_name: DataCategory = DataCategory.CODEBASES
-
-
-class ArticleDocument(Document):
-    class Settings(Document.Settings):
-        collection_name: DataCategory = DataCategory.ARTICLES
-
-
-class PostDocument(Document):
-    image: Optional[str] = None
-
-    class Settings(Document.Settings):
-        collection_name: DataCategory = DataCategory.POSTS
+    class Settings:
+        _route = settings.storage_routes.get_route("codebases", "cleaned")
+        connection_name: str = _route.connection
+        collection_name: str = _route.target
