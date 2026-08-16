@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from pydantic import UUID4
 
-from vedika.domain.documents import BaseContentDomain
+from vedika.domain.raw import BaseContentDomain
 from vedika.domain.repositories import BaseContentRepository
 from vedika.domain.types import DataCategory
 

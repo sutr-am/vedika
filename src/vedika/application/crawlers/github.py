@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import UUID4, HttpUrl
 
 from vedika.application.crawlers.base import BaseCrawler
-from vedika.domain.documents import CodebaseDomain
+from vedika.domain.raw import CodebaseDomain
 from vedika.domain.repositories import BaseContentRepository
 from vedika.domain.types import DataCategory
 

@@ -3,7 +3,7 @@ import os
 from vedika.application.crawlers.dispatcher import CrawlerDispatcher
 from vedika.application.crawlers.github import GithubCrawler
 from vedika.domain.types import DataCategory
-from vedika.infrastructure.db.factory import get_document_repository
+from vedika.infrastructure.db.factory import get_raw_repository
 
 
 def build_crawler_dispatcher() -> CrawlerDispatcher:
@@ -16,7 +16,7 @@ def build_crawler_dispatcher() -> CrawlerDispatcher:
 
     # 2. Instantiate the crawlers
     github_crawler = GithubCrawler(
-        repository=get_document_repository(category=DataCategory.CODEBASES),
+        repository=get_raw_repository(category=DataCategory.CODEBASES),
         github_token=github_token,
     )
 
