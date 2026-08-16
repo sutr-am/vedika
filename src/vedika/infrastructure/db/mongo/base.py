@@ -8,7 +8,6 @@ from pydantic import UUID4, BaseModel, Field
 from pymongo import errors
 
 from vedika.infrastructure.db.mongo.connection import mongo_connection
-from vedika.settings import settings
 
 T = TypeVar("T", bound="NoSQLBaseDocument")
 
@@ -44,11 +43,23 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
 
     @classmethod
     def _get_database(cls):
-        return mongo_connection.get_database(settings.mongo.db_name)
+        connection_name = cls.get_connection_name()
+        return mongo_connection.get_database(connection_name=connection_name)
 
     @classmethod
     def _get_collection(cls):
-        return cls._get_database()[cls.get_collection_name()]
+        collection_name = cls.get_collection_name()
+        return cls._get_database()[collection_name]
+
+    @classmethod
+    def get_connection_name(cls) -> str:
+        settings_cls = getattr(cls, "Settings", None)
+        connection_name = getattr(settings_cls, "connection_name", None)
+        if not connection_name:
+            raise TypeError(
+                f"{cls.__name__} must define a nested 'Settings' class with 'connection_name' attribute."
+            )
+        return connection_name
 
     @classmethod
     def get_collection_name(cls) -> str:
@@ -59,6 +70,17 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
                 f"{cls.__name__} must define a nested Settings class with 'collection_name' attribute."
             )
         return collection_name
+
+    @classmethod
+    def find(cls: type[T], **filter_options) -> T | None:
+        collection = cls._get_collection()
+        sanitized_filters = cls._sanitize_filters(filter_options=filter_options)
+        try:
+            instance = collection.find_one(sanitized_filters)
+        except errors.OperationFailure:
+            logger.exception(f"Failed to retrieve document of type {cls.__name__}")
+            return None
+        return cls.from_mongo(instance) if instance else None
 
     @classmethod
     def from_mongo(cls: Type[T], data: dict[str, Any] | None) -> T | None:
@@ -104,14 +126,3 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
                 f"Failed to save document of type {self.__class__.__name__} with ID = {doc_id}"
             )
             return None
-
-    @classmethod
-    def find(cls: type[T], **filter_options) -> T | None:
-        collection = cls._get_collection()
-        sanitized_filters = cls._sanitize_filters(filter_options=filter_options)
-        try:
-            instance = collection.find_one(sanitized_filters)
-        except errors.OperationFailure:
-            logger.exception(f"Failed to retrieve document of type {cls.__name__}")
-            return None
-        return cls.from_mongo(instance) if instance else None
