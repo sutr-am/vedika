@@ -7,9 +7,9 @@ from zenml import get_step_context, step
 
 from vedika import log_json_dict
 from vedika.application.crawlers.factory import build_crawler_dispatcher
-from vedika.domain.documents import UserDomain
+from vedika.domain.raw import UserDomain
 from vedika.domain.repositories import BaseContentRepository, BaseUserRepository
-from vedika.infrastructure.db.factory import get_document_repository, get_user_repository
+from vedika.infrastructure.db.factory import get_raw_repository, get_user_repository
 
 
 @step
@@ -57,7 +57,7 @@ def crawl_links(
             crawler = crawler_dispatcher.get_crawler(url=url)
 
             # Get the specific repository for this document's category
-            repository: BaseContentRepository = get_document_repository(category=crawler._category)
+            repository: BaseContentRepository = get_raw_repository(category=crawler._category)
             if not force_recrawl and repository.exists_by_url(url=url):
                 logger.info(
                     f"Skipping {url} - already exists in database. Use force_recrawl=True to override."

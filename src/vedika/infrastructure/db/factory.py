@@ -1,64 +1,100 @@
-import os
-from typing import Union, cast
+from typing import cast
+
+from loguru import logger
 
 from vedika.domain.repositories import (
+    BaseCleanedRepository,
     BaseContentRepository,
     BaseUserRepository,
-    BaseVectorRepository,
 )
 from vedika.domain.types import DataCategory
+from vedika.infrastructure.db.mongo.repositories import (
+    MongoCleanedCodebaseRepository,
+    MongoCodebaseRepository,
+    MongoUserRepository,
+)
+from vedika.settings import settings
 
 # Type alias for the internal cache
-_Repository = Union[BaseUserRepository, BaseContentRepository, BaseVectorRepository]
-_repository_cache: dict[DataCategory, _Repository] = {}
-_vector_repository_cache: dict[DataCategory, _Repository] = {}
+# _Repository = Union[BaseUserRepository, BaseContentRepository, BaseVectorRepository]
+
+
+# Dedicated repository-caches for each state
+_user_repository_cache: dict[DataCategory, BaseUserRepository] = {}
+_raw_repository_cache: dict[DataCategory, BaseContentRepository] = {}
+_cleaned_repository_cache: dict[DataCategory, BaseCleanedRepository] = {}
+
+# Registry map for each state's (category, driver) combo
+_USER_REGISTRY = {(DataCategory.USERS, "mongo"): MongoUserRepository}
+_RAW_REGISTRY = {(DataCategory.CODEBASES, "mongo"): MongoCodebaseRepository}
+_CLEANED_REGISTRY = {(DataCategory.CODEBASES, "mongo"): MongoCleanedCodebaseRepository}
+
+
+def _get_driver_for_connection(connection_name: str) -> str:
+    conn_config = settings.connections.get(connection_name)
+    if not conn_config:
+        raise ValueError(
+            f"Connection profile '{connection_name=}' not found in settings.connections"
+        )
+    return conn_config.driver
 
 
 def _initialize_repositories() -> None:
-    """Internal bootstrapping function."""
-    user_db_type = os.getenv("USER_DATABASE_TYPE", "mongo").lower()
-    doc_db_type = os.getenv("DOCUMENT_DATABASE_TYPE", "mongo").lower()
-    vector_db_type = os.getenv("VECTOR_DATABASE_TYPE", "qdrant").lower()
+    """Dynamically bootstrap repositories based on settings.storage_routes"""
 
-    if user_db_type == "mongo":
-        from vedika.infrastructure.db.mongo.repositories import MongoUserRepository
+    #####---- USER Repositories
+    user_connection_name = settings.storage_routes.users.connection
+    user_driver = _get_driver_for_connection(connection_name=user_connection_name)
+    user_repo_class = _USER_REGISTRY.get((DataCategory.USERS, user_driver))
+    if user_repo_class:
+        _user_repository_cache[DataCategory.USERS] = user_repo_class()
 
-        _repository_cache[DataCategory.USERS] = MongoUserRepository()
-    else:
-        raise ValueError(f"Unsupported user database type: {user_db_type=}")
+    ###### Document Repositories
+    for category, category_route in settings.storage_routes.categories.items():
+        try:
+            category = DataCategory(category)
+        except ValueError:
+            logger.error(
+                f"Category '{category=}' in YAML is not a valid DaatCategory enum. Skipping"
+            )
+            continue
 
-    if doc_db_type == "mongo":
-        from vedika.infrastructure.db.mongo.repositories import (
-            MongoArticleRepository,
-            MongoCodebaseRepository,
-            MongoPostRepository,
-        )
+        ###---- RAW Repositories ----
+        if getattr(category_route, "raw", None):
+            connection_name = category_route.raw.connection
+            driver = _get_driver_for_connection(connection_name=connection_name)
+            repo_class = _RAW_REGISTRY.get((category, driver))
+            if repo_class:
+                _raw_repository_cache[category] = repo_class()
+            else:
+                logger.warning(
+                    f"No RAW repository implementation found for {category=} & {driver=}"
+                )
 
-        _repository_cache[DataCategory.CODEBASES] = MongoCodebaseRepository()
-        _repository_cache[DataCategory.ARTICLES] = MongoArticleRepository()
-        _repository_cache[DataCategory.POSTS] = MongoPostRepository()
-    else:
-        raise ValueError(f"Unsupported document database type: {doc_db_type=}")
-
-    if vector_db_type == "qdrant":
-        from vedika.infrastructure.db.qdrant.repositories import QdrantCodebaseRepository
-
-        _repository_cache[DataCategory.CODEBASES] = QdrantCodebaseRepository()
-    else:
-        raise ValueError(f"Unsupported vector databse type: {vector_db_type=}")
+        ###------ CLEANED Repositories
+        if getattr(category_route, "cleaned", None):
+            connection_name = category_route.cleaned.connection
+            driver = _get_driver_for_connection(connection_name=connection_name)
+            repo_class = _CLEANED_REGISTRY.get((category, driver))
+            if repo_class:
+                _cleaned_repository_cache[category] = repo_class()
+            else:
+                logger.warning(
+                    f"No RAW repository implementation found for {category=} & {driver=}"
+                )
 
 
 # ==========================================
-# PUBLIC API (Strictly Typed, No Overloads)
+# PUBLIC API
 # ==========================================
 
 
-def get_user_repository() -> BaseUserRepository:
+def get_user_repository(category: DataCategory = DataCategory.USERS) -> BaseUserRepository:
     """Fetches the User repository."""
-    if not _repository_cache:
+    if not _user_repository_cache:
         _initialize_repositories()
 
-    repo = _repository_cache.get(DataCategory.USERS)
+    repo = _user_repository_cache.get(category)
     if not repo:
         raise ValueError("User repository failed to initialize.")
 
@@ -66,28 +102,25 @@ def get_user_repository() -> BaseUserRepository:
     return cast(BaseUserRepository, repo)
 
 
-def get_document_repository(category: DataCategory) -> BaseContentRepository:
+def get_raw_repository(category: DataCategory) -> BaseContentRepository:
     """Fetches the correct Document repository based on the category."""
-    if category == DataCategory.USERS:
-        raise ValueError("Use get_user_repository() to fetch the User repository.")
-
-    if not _repository_cache:
+    if not _raw_repository_cache:
         _initialize_repositories()
 
-    repo = _repository_cache.get(category)
+    repo = _raw_repository_cache.get(category)
     if not repo:
-        raise ValueError(f"No document repository registered for {category=}")
+        raise ValueError(f"No RAW repository registered for {category=}")
 
     # We cast internally so the consumer never has to worry about it
     return cast(BaseContentRepository, repo)
 
 
-def get_vector_repository(category: DataCategory) -> BaseVectorRepository:
+def get_cleaned_repository(category: DataCategory) -> BaseCleanedRepository:
     """fectches the correct Vector repository based on the category"""
-    if not _vector_repository_cache:
+    if not _cleaned_repository_cache:
         _initialize_repositories()
 
-    repo = _vector_repository_cache.get(category)
+    repo = _cleaned_repository_cache.get(category)
     if not repo:
-        raise ValueError(f"No Vector Repository registered for {category=}")
-    return cast(BaseVectorRepository, repo)
+        raise ValueError(f"No CLEANED Repository registered for {category=}")
+    return cast(BaseCleanedRepository, repo)
