@@ -223,3 +223,10 @@ etl:
     @just _run_logged "$ETL_LOGS_FILE" ZENML_LOGGING_VERBOSITY=WARN PYTHONPATH=src uv run python tools/run_etl.py
     @{{log}} "[green]✅ Pipeline execution finished![/]"
 
+
+# Run the Feature Engineering service end-to-end
+[group('core-services')]
+feature-engineering:
+    @just _run_logged "$ETL_LOGS_FILE" ZENML_LOGGING_VERBOSITY=WARN PYTHONPATH=src uv run python tools/run_feature_engineering.py
+    @{{log}} "[green]✅ Pipeline execution finished![/]"
+

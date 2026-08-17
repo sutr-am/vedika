@@ -45,6 +45,27 @@ class MongoCodebaseRepository(BaseContentRepository[CodebaseDomain]):
         )
         db_doc.save()
 
+    def get_all(self) -> list[CodebaseDomain]:
+        db_docs = CodebaseDocument.find_all()
+        domain_docs = []
+        if not db_docs:
+            return domain_docs
+
+        for doc in db_docs:
+            domain_docs.append(
+                CodebaseDomain(
+                    id=doc.id,
+                    title=doc.title,
+                    source_url=doc.link,
+                    content=doc.content,
+                    platform=doc.platform,
+                    author_id=doc.author_id,
+                    author_full_name=doc.author_full_name,
+                    name=doc.codebase_name,
+                )
+            )
+        return domain_docs
+
 
 class MongoCleanedCodebaseRepository(BaseCleanedRepository[CleanedCodebaseDomain]):
     def exists_by_id(self, document_id: UUID) -> bool:

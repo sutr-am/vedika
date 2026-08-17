@@ -18,7 +18,7 @@ class CodebaseCleaningHandler(BaseCleaningHandler[CodebaseDomain, CleanedCodebas
         cleaned_text = text.strip()
 
         logger.info(
-            f"Cleaned codebase '{data=}'."
+            f"Cleaned codebase '{data.id=}'."
             f"Length reduced from {len(raw_text)} -> {len(cleaned_text)} chars."
         )
 
