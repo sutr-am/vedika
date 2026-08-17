@@ -26,6 +26,11 @@ class BaseContentRepository(Generic[ContentDomainType], ABC):
         """Saves a document to the underlying storage"""
         pass
 
+    @abstractmethod
+    def get_all(self) -> list[ContentDomainType]:
+        """Fetches all docuemnts from repository"""
+        pass
+
 
 class BaseUserRepository(Generic[UserDomainType], ABC):
     @abstractmethod

@@ -83,6 +83,22 @@ class NoSQLBaseDocument(BaseModel, Generic[T], ABC):
         return cls.from_mongo(instance) if instance else None
 
     @classmethod
+    def find_all(cls: type[T], **filter_options) -> list[T] | None:
+        collection = cls._get_collection()
+        sanitized_filters = cls._sanitize_filters(filter_options=filter_options)
+        try:
+            cursor = collection.find(sanitized_filters)
+            results = []
+            for instance in cursor:
+                doc = cls.from_mongo(data=instance)
+                if doc:
+                    results.append(doc)
+            return results
+        except errors.OperationFailure:
+            logger.exception(f"Failed to retrieve document of type {cls.__name__}")
+            return []
+
+    @classmethod
     def from_mongo(cls: Type[T], data: dict[str, Any] | None) -> T | None:
         if not data:
             return None
