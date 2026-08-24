@@ -1,14 +1,15 @@
+# src/vedika/application/preprocessing/cleaning/codebase.py
 import re
 
 from loguru import logger
 
-from vedika.application.preprocessing.cleaning.base import BaseCleaningHandler
-from vedika.domain.cleaned import CleanedCodebaseDomain
-from vedika.domain.raw import CodebaseDomain
+from vedika.application.interfaces.cleaners import BaseCleaningHandler
+from vedika.domain.cleaned import CodebaseCleanedDomain
+from vedika.domain.raw import CodebaseRawDomain
 
 
-class CodebaseCleaningHandler(BaseCleaningHandler[CodebaseDomain, CleanedCodebaseDomain]):
-    def clean(self, data: CodebaseDomain) -> CleanedCodebaseDomain:
+class CodebaseCleaningHandler(BaseCleaningHandler[CodebaseRawDomain, CodebaseCleanedDomain]):
+    def clean(self, data: CodebaseRawDomain) -> CodebaseCleanedDomain:
         raw_text = data.content
 
         # Data cleaning
@@ -22,10 +23,11 @@ class CodebaseCleaningHandler(BaseCleaningHandler[CodebaseDomain, CleanedCodebas
             f"Length reduced from {len(raw_text)} -> {len(cleaned_text)} chars."
         )
 
-        return CleanedCodebaseDomain(
+        return CodebaseCleanedDomain(
             id=data.id,
+            title=data.title,
             content=cleaned_text,
             platform=data.platform,
-            author_id=data.author_id,
-            author_full_name=data.author_full_name,
+            source_url=data.source_url,
+            user_id=data.user_id,
         )

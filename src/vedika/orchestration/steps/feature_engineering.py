@@ -1,16 +1,17 @@
+# src/vedika/orchestration/steps/feature_engineering.py
 from typing import Annotated
 
 from zenml import step
 
 from vedika.application.preprocessing.cleaning.dispatcher import CleaningDispatcher
 from vedika.domain.cleaned import BaseCleanedDomain
-from vedika.domain.raw import BaseContentDomain
+from vedika.domain.raw import BaseRawDomain
 from vedika.infrastructure.db.factory import get_cleaned_repository
 
 
 @step
 def clean_documents(
-    raw_documents: list[BaseContentDomain],
+    raw_documents: list[BaseRawDomain],
 ) -> Annotated[list[BaseCleanedDomain], "cleaned_documents"]:
     """ZenML step: Takes raw documents, cleans those and persists in the corresponding DBs"""
     cleaned_documents = []

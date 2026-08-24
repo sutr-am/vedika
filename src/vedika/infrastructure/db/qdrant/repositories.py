@@ -1,5 +1,6 @@
-from vedika.domain.chunks import CodebaseChunkDomain
-from vedika.domain.repositories import BaseVectorRepository
+# src/vedika/infrastructure/db/qdrant/repositories.py
+from vedika.domain.chunked import CodebaseChunkDomain
+from vedika.application.interfaces.repositories import BaseVectorRepository
 from vedika.infrastructure.db.qdrant.documents import CodebaseChunkDocument
 
 

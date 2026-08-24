@@ -1,139 +1,97 @@
+# src/vedika/infrastructure/db/mongo/repositories.py
 from uuid import UUID
 
-from vedika.domain.cleaned import CleanedCodebaseDomain
-from vedika.domain.raw import CodebaseDomain, UserDomain
-from vedika.domain.repositories import (
+from vedika.application.interfaces.repositories import (
     BaseCleanedRepository,
-    BaseContentRepository,
+    BaseRawRepository,
     BaseUserRepository,
 )
-from vedika.infrastructure.db.mongo.documents import (
-    CleanedCodebaseDocument,
-    CodebaseDocument,
-    UserDocument,
+from vedika.domain.cleaned import CodebaseCleanedDomain
+from vedika.domain.raw import CodebaseRawDomain
+from vedika.domain.users import UserDomain
+from vedika.infrastructure.db.mongo.models import (
+    CodebaseCleanedMongoDocument,
+    CodebaseRawMongoDocument,
+    UserMongoDocument,
 )
 
 
-class MongoUserRepository(BaseUserRepository[UserDomain]):
+class UserMongoRepository(BaseUserRepository[UserDomain]):
     def get_or_create_user(self, first_name: str, last_name: str) -> UserDomain:
-        db_user = UserDocument.find(first_name=first_name, last_name=last_name)
+        db_user = UserMongoDocument.find(first_name=first_name, last_name=last_name)
         if not db_user:
-            db_user = UserDocument(first_name=first_name, last_name=last_name)
+            db_user = UserMongoDocument(first_name=first_name, last_name=last_name)
             db_user.save()
 
         return UserDomain(id=db_user.id, first_name=db_user.first_name, last_name=db_user.last_name)
 
 
-class MongoCodebaseRepository(BaseContentRepository[CodebaseDomain]):
+class CodebaseRawMongoRepository(BaseRawRepository[CodebaseRawDomain]):
     """
     MongoDB concrete implementation of DocumentRepository interface.
-    Handles translating between Domain data-models and MongoDB ODM docuemnts.
+    Handles translating between Domain data-models and MongoDB ODM documents.
     """
 
     def exists_by_url(self, url: str) -> bool:
-        return CodebaseDocument.find(link=url) is not None
+        return CodebaseRawMongoDocument.find(source_url=url) is not None
 
-    def save(self, document: CodebaseDomain) -> None:
-        db_doc = CodebaseDocument(
+    def save(self, document: CodebaseRawDomain) -> None:
+        db_doc = CodebaseRawMongoDocument(
             title=document.title,
-            link=str(document.source_url),
-            platform=document.platform,
-            author_id=document.author_id,
-            author_full_name=document.author_full_name,
             content=document.content,
-            codebase_name=document.name,
+            platform=document.platform,
+            source_url=document.source_url,
+            user_id=document.user_id,
         )
+
         db_doc.save()
 
-    def get_all(self) -> list[CodebaseDomain]:
-        db_docs = CodebaseDocument.find_all()
+    def get_all(self) -> list[CodebaseRawDomain]:
+        db_docs = CodebaseRawMongoDocument.find_all()
         domain_docs = []
-        if not db_docs:
-            return domain_docs
 
-        for doc in db_docs:
-            domain_docs.append(
-                CodebaseDomain(
-                    id=doc.id,
-                    title=doc.title,
-                    source_url=doc.link,
-                    content=doc.content,
-                    platform=doc.platform,
-                    author_id=doc.author_id,
-                    author_full_name=doc.author_full_name,
-                    name=doc.codebase_name,
+        if db_docs:
+            for doc in db_docs:
+                domain_docs.append(
+                    CodebaseRawDomain(
+                        id=doc.id,
+                        title=doc.title,
+                        content=doc.content,
+                        platform=doc.platform,
+                        source_url=doc.source_url,
+                        user_id=doc.user_id,
+                    )
                 )
-            )
+
         return domain_docs
 
 
-class MongoCleanedCodebaseRepository(BaseCleanedRepository[CleanedCodebaseDomain]):
+class CodebaseCleanedMongoRepository(BaseCleanedRepository[CodebaseCleanedDomain]):
     def exists_by_id(self, document_id: UUID) -> bool:
-        return CleanedCodebaseDocument.find(id=document_id) is not None
+        return CodebaseCleanedMongoDocument.find(id=document_id) is not None
 
-    def save(self, document: CleanedCodebaseDomain) -> None:
-        db_doc = CleanedCodebaseDocument(
+    def save(self, document: CodebaseCleanedDomain) -> None:
+        db_doc = CodebaseCleanedMongoDocument(
             id=document.id,
+            title=document.title,
             content=document.content,
             platform=document.platform,
-            author_id=document.author_id,
-            author_full_name=document.author_full_name,
+            source_url=document.source_url,
+            user_id=document.user_id,
         )
+
         db_doc.save()
 
-    def get_by_id(self, document_id: UUID) -> CleanedCodebaseDomain | None:
-        db_doc: CleanedCodebaseDocument | None = CleanedCodebaseDocument.find(id=document_id)
-        if not db_doc:
-            return None
-        doc = CleanedCodebaseDomain(
-            id=db_doc.id,
-            content=db_doc.content,
-            platform=db_doc.platform,
-            author_id=db_doc.author_id,
-            author_full_name=db_doc.author_full_name,
-        )
-        return doc
-
-
-# class MongoArticleRepository(BaseContentRepository[ArticleDomain]):
-#     """
-#     MongoDB concrete implementation of DocumentRepository interface.
-#     Handles translating between Domain data-models and MongoDB ODM docuemnts.
-#     """
-
-#     def exists_by_url(self, url: str) -> bool:
-#         return ArticleDocument.find(link=url) is not None
-
-#     def save(self, document: ArticleDomain) -> None:
-#         article = document
-#         db_doc = ArticleDocument(
-#             title=article.title,
-#             link=str(article.source_url),
-#             platform=article.platform,
-#             author_id=article.author_id,
-#             author_full_name=article.author_full_name,
-#             content=article.content,
-#         )
-#         db_doc.save()
-
-
-# class MongoPostRepository(BaseContentRepository[PostDomain]):
-#     """
-#     MongoDB concrete implementation of DocumentRepository interface.
-#     Handles translating between Domain data-models and MongoDB ODM docuemnts.
-#     """
-
-#     def exists_by_url(self, url: str) -> bool:
-#         return PostDocument.find(link=url) is not None
-
-#     def save(self, document: PostDomain) -> None:
-#         post = document
-#         db_doc = PostDocument(
-#             title=post.title,
-#             link=str(post.source_url),
-#             platform=post.platform,
-#             author_id=post.author_id,
-#             author_full_name=post.author_full_name,
-#             content=post.content,
-#         )
-#         db_doc.save()
+    def get_by_id(self, document_id: UUID) -> CodebaseCleanedDomain | None:
+        db_doc: CodebaseCleanedDomain | None = CodebaseCleanedMongoDocument.find(id=document_id)
+        if db_doc:
+            doc = CodebaseCleanedDomain(
+                title=db_doc.title,
+                id=db_doc.id,
+                content=db_doc.content,
+                platform=db_doc.platform,
+                source_url=db_doc.source_url,
+                user_id=db_doc.user_id,
+            )
+            return doc
+        return None

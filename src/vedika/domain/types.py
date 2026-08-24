@@ -1,3 +1,4 @@
+# src/vedika/domain/types.py
 from enum import StrEnum
 
 
@@ -6,3 +7,10 @@ class DataCategory(StrEnum):
     CODEBASES = "codebases"
     POSTS = "posts"
     ARTICLES = "articles"
+
+
+class DataState(StrEnum):
+    RAW = "raw"
+    CLEANED = "cleaned"
+    CHUNKED = "chunked"
+    EMBEDDED = "embedded"

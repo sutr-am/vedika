@@ -1,3 +1,4 @@
+# src/vedika/infrastructure/db/qdrant/connection.py
 from loguru import logger
 from qdrant_client import QdrantClient
 
