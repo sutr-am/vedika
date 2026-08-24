@@ -10,3 +10,6 @@ find src -type d -exec touch {}/__init__.py \;
 
 ![](./docs/vedika_architecture.png)
 ![](./docs/vedika_runtime.png)
+
+
+--------------

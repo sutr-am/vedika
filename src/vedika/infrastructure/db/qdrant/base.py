@@ -1,3 +1,4 @@
+# src/vedika/infrastructure/db/qdrant/base.py
 from abc import ABC
 from datetime import datetime, timezone
 from typing import Generic, TypeVar
@@ -59,7 +60,12 @@ class QdrantBaseDocument(BaseModel, Generic[T], ABC):
         point = self.to_point(**kwargs)
 
         try:
-            client.upsert(collection_name=collection_name, points=[point,])
+            client.upsert(
+                collection_name=collection_name,
+                points=[
+                    point,
+                ],
+            )
             logger.success(f"Successfully upsert-ed point into {collection_name=}")
             return self
         except Exception as e:

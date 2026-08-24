@@ -2,7 +2,11 @@ connections:
     primary_mongo:
         driver: mongo
         host: mongodb://${oc.env:MONGO_USER}:${oc.env:MONGO_PASSWORD}@${oc.env:MONGO_HOST_IP}:${oc.env:MONGO_PORT}
-        db_name: ${oc.env:MONGO_DB_NAME}
+        db_name: ${oc.env:MONGO_DB_NAME_PRIMARY}
+    secondary_mongo:
+        driver: mongo
+        host: mongodb://${oc.env:MONGO_USER}:${oc.env:MONGO_PASSWORD}@${oc.env:MONGO_HOST_IP}:${oc.env:MONGO_PORT}
+        db_name: ${oc.env:MONGO_DB_NAME_SECONDARY}
 
 storage_routes:
     users:
@@ -14,5 +18,5 @@ storage_routes:
                 connection: primary_mongo
                 target: codebases_raw
             cleaned:
-                connection: primary_mongo
+                connection: secondary_mongo
                 target: codebases_cleaned

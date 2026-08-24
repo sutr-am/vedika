@@ -1,6 +1,7 @@
+# src/vedika/application/preprocessing/cleaning/factory.py
 """Implements Abstract Factory Pattern"""
 
-from vedika.application.preprocessing.cleaning.base import BaseCleaningHandler
+from vedika.application.interfaces.cleaners import BaseCleaningHandler
 from vedika.application.preprocessing.cleaning.codebase import CodebaseCleaningHandler
 from vedika.domain.types import DataCategory
 

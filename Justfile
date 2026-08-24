@@ -106,8 +106,8 @@ format:
 
 # Shows the tree structure of the CWD without any excluded files
 [group('code-quality')]
-tree:
-    tree -I '__pycache__|*.pyc|__init__.py|*.egg-info'
+tree path=".":
+    tree -I '__pycache__|*.pyc|__init__.py|*.egg-info' {{path}}
 
 # ==============================================================================
 # 🗄️ Database Lifecycle Recipes

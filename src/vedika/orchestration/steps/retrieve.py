@@ -1,9 +1,10 @@
+# src/vedika/orchestration/steps/retrieve.py
 from typing import Annotated
 
 from loguru import logger
 from zenml import step
 
-from vedika.domain.raw import BaseContentDomain
+from vedika.domain.raw import BaseRawDomain
 from vedika.domain.types import DataCategory
 from vedika.infrastructure.db.factory import get_cleaned_repository, get_raw_repository
 
@@ -11,7 +12,7 @@ from vedika.infrastructure.db.factory import get_cleaned_repository, get_raw_rep
 @step
 def fetch_unprocessed_documents(
     category: DataCategory,
-) -> Annotated[list[BaseContentDomain], "unprocessed_raw_documents"]:
+) -> Annotated[list[BaseRawDomain], "unprocessed_raw_documents"]:
     raw_repo = get_raw_repository(category=category)
     cleaned_repo = get_cleaned_repository(category=category)
 

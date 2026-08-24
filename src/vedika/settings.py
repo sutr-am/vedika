@@ -1,3 +1,4 @@
+# src/vedika/settings.py
 import os
 from pathlib import Path
 from typing import Any, Self
@@ -44,7 +45,7 @@ class StorageRouteConfig(BaseModel):
     users: StateRouteConfig
     categories: dict[str, CategoryRouteConfig]
 
-    def get_route(self, category_name: str, state: str) -> StateRouteConfig:
+    def get_route(self, category_name: str, state: str) -> StateRouteConfig | None:
         category_config = self.categories.get(category_name)
         if not category_config:
             raise ValueError(f"Category '{category_name}' not found in storage_routes.")

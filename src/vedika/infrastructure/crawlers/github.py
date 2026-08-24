@@ -1,3 +1,4 @@
+# src/vedika/infrastructure/crawlers/github.py
 import base64
 
 from github import Auth, Github
@@ -5,19 +6,18 @@ from github.GithubException import GithubException
 from github.Repository import Repository
 from loguru import logger
 from pydantic import UUID4, HttpUrl
+from tqdm import tqdm
 
-from vedika.application.crawlers.base import BaseCrawler
-from vedika.domain.raw import CodebaseDomain
-from vedika.domain.repositories import BaseContentRepository
+from vedika.application.interfaces.crawlers import BaseCrawler
+from vedika.domain.raw import CodebaseRawDomain
 from vedika.domain.types import DataCategory
 
 
 class GithubCrawler(BaseCrawler):
-    _category: DataCategory = DataCategory.CODEBASES
+    category: DataCategory = DataCategory.CODEBASES
 
     def __init__(
         self,
-        repository: BaseContentRepository,
         github_token: str | None,
         ignore=(
             ".git",
@@ -30,7 +30,7 @@ class GithubCrawler(BaseCrawler):
             ".DS_Store",
         ),
     ) -> None:
-        super().__init__(repository)
+        # super().__init__(repository)
         self._ignore = ignore
         if github_token:
             auth = Auth.Token(token=github_token)
@@ -38,7 +38,8 @@ class GithubCrawler(BaseCrawler):
         else:
             self.gh = Github()
 
-    def _parse_repo_url(self, url: str) -> tuple[str, str]:
+    @staticmethod
+    def _parse_repo_url(url: str) -> tuple[str, str]:
         repo_path = (
             url.replace("https://github.com", "").replace("http://github.com", "").strip("/")
         )
@@ -48,10 +49,11 @@ class GithubCrawler(BaseCrawler):
     def _should_ignore(self, file_path: str) -> bool:
         return any(file_path.endswith(i) or f"/{i}/" in file_path for i in self._ignore)
 
-    def _fetch_file_content(self, repo: Repository, file_path: str):
+    @staticmethod
+    def _fetch_file_content(repo: Repository, file_path: str):
         try:
             file_content_encoded = repo.get_contents(file_path)
-            # If the API return a list, the it's a dictionary; so we can skip it as its not code
+            # If the API return a list, then it's a dictionary; so we can skip it as it's not code
             if isinstance(file_content_encoded, list):
                 return None
             file_content_decoded = base64.b64decode(file_content_encoded.content).decode("utf-8")
@@ -62,7 +64,8 @@ class GithubCrawler(BaseCrawler):
 
     def _build_content_str(self, repo: Repository, tree):
         content_str = ""
-        for element in tree:
+        # for element in tree:
+        for element in tqdm(tree, desc=f"Crawling {repo.name} files"):
             if element.type == "tree" or self._should_ignore(element.path):
                 continue
             file_content = self._fetch_file_content(repo, element.path)
@@ -72,9 +75,9 @@ class GithubCrawler(BaseCrawler):
                 content_str += header + file_content + footer
         return content_str
 
-    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> CodebaseDomain:
+    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> CodebaseRawDomain:
         """
-        Orchestrates the crwaling process and saves the resulting CodebaseDocument
+        Orchestrates the crawling process and saves the resulting CodebaseDocument
         """
         logger.info(f"Crawling Github Repository: {url}")
 
@@ -84,20 +87,18 @@ class GithubCrawler(BaseCrawler):
             repo = self.gh.get_repo(repo_path)
             tree = repo.get_git_tree(sha=repo.default_branch, recursive=True).tree
 
-            # Build the massive content string from all teh code in teh repo
+            # Build the massive content string from all the code in the repo
             content_str = self._build_content_str(repo, tree)
 
             # 1. Instantiate the pure Domain model
-            domain_doc = CodebaseDomain(
-                title=f"GitHub - {repo_name}",
-                source_url=HttpUrl(url),
-                platform="github",
-                author_id=user_id,
-                author_full_name=user_full_name,
+            raw_data = CodebaseRawDomain(
+                title=f"github/{repo_name}",
                 content=content_str,
-                name=repo_name,
+                platform="github",
+                source_url=HttpUrl(url),
+                user_id=user_id,
             )
-            return domain_doc
+            return raw_data
         except GithubException as e:
             logger.exception(f"Failed to crawl {url}: {e}")
             raise e

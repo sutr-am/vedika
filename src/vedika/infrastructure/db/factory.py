@@ -1,33 +1,46 @@
-from typing import cast
+# src/vedika/infrastructure/db/factory.py
+from collections import defaultdict
+from typing import DefaultDict, Union, cast
 
 from loguru import logger
 
-from vedika.domain.repositories import (
+from vedika.application.interfaces.repositories import (
     BaseCleanedRepository,
-    BaseContentRepository,
+    BaseRawRepository,
     BaseUserRepository,
 )
-from vedika.domain.types import DataCategory
+from vedika.domain.types import DataCategory, DataState
 from vedika.infrastructure.db.mongo.repositories import (
-    MongoCleanedCodebaseRepository,
-    MongoCodebaseRepository,
-    MongoUserRepository,
+    CodebaseCleanedMongoRepository,
+    CodebaseRawMongoRepository,
+    UserMongoRepository,
 )
 from vedika.settings import settings
 
 # Type alias for the internal cache
-# _Repository = Union[BaseUserRepository, BaseContentRepository, BaseVectorRepository]
-
+_Repository = Union[BaseRawRepository, BaseCleanedRepository]
+_repository_cache: DefaultDict[DataCategory, dict[DataState, _Repository]] = defaultdict(dict)
 
 # Dedicated repository-caches for each state
 _user_repository_cache: dict[DataCategory, BaseUserRepository] = {}
-_raw_repository_cache: dict[DataCategory, BaseContentRepository] = {}
+_raw_repository_cache: dict[DataCategory, BaseRawRepository] = {}
 _cleaned_repository_cache: dict[DataCategory, BaseCleanedRepository] = {}
 
 # Registry map for each state's (category, driver) combo
-_USER_REGISTRY = {(DataCategory.USERS, "mongo"): MongoUserRepository}
-_RAW_REGISTRY = {(DataCategory.CODEBASES, "mongo"): MongoCodebaseRepository}
-_CLEANED_REGISTRY = {(DataCategory.CODEBASES, "mongo"): MongoCleanedCodebaseRepository}
+_USER_REGISTRY = {(DataCategory.USERS, "mongo"): UserMongoRepository}
+_RAW_REGISTRY = {(DataCategory.CODEBASES, "mongo"): CodebaseRawMongoRepository}
+_CLEANED_REGISTRY = {(DataCategory.CODEBASES, "mongo"): CodebaseCleanedMongoRepository}
+
+_REGISTRY = {
+    DataCategory.CODEBASES: {
+        DataState.RAW: {
+            "mongo": CodebaseRawMongoRepository,
+        },
+        DataState.CLEANED: {
+            "mongo": CodebaseCleanedMongoRepository,
+        },
+    },
+}
 
 
 def _get_driver_for_connection(connection_name: str) -> str:
@@ -80,7 +93,7 @@ def _initialize_repositories() -> None:
                 _cleaned_repository_cache[category] = repo_class()
             else:
                 logger.warning(
-                    f"No RAW repository implementation found for {category=} & {driver=}"
+                    f"No CLEANED repository implementation found for {category=} & {driver=}"
                 )
 
 
@@ -102,7 +115,7 @@ def get_user_repository(category: DataCategory = DataCategory.USERS) -> BaseUser
     return cast(BaseUserRepository, repo)
 
 
-def get_raw_repository(category: DataCategory) -> BaseContentRepository:
+def get_raw_repository(category: DataCategory) -> BaseRawRepository:
     """Fetches the correct Document repository based on the category."""
     if not _raw_repository_cache:
         _initialize_repositories()
@@ -112,11 +125,11 @@ def get_raw_repository(category: DataCategory) -> BaseContentRepository:
         raise ValueError(f"No RAW repository registered for {category=}")
 
     # We cast internally so the consumer never has to worry about it
-    return cast(BaseContentRepository, repo)
+    return cast(BaseRawRepository, repo)
 
 
 def get_cleaned_repository(category: DataCategory) -> BaseCleanedRepository:
-    """fectches the correct Vector repository based on the category"""
+    """fetches the correct Vector repository based on the category"""
     if not _cleaned_repository_cache:
         _initialize_repositories()
 
@@ -124,3 +137,17 @@ def get_cleaned_repository(category: DataCategory) -> BaseCleanedRepository:
     if not repo:
         raise ValueError(f"No CLEANED Repository registered for {category=}")
     return cast(BaseCleanedRepository, repo)
+
+
+def get_repository(category: DataCategory, state: DataState) -> _Repository:
+    """Fetches the correct Document repository based on the category."""
+    if not _repository_cache:
+        _initialize_repositories()
+
+    category_cache = _repository_cache.get(category, {})
+    repo = category_cache.get(state)
+    if not repo:
+        raise ValueError(f"No repository registered for ({category=}, {state=})")
+
+    # We cast internally so the consumer never has to worry about it
+    return cast(_Repository, repo)
