@@ -1,17 +1,11 @@
 # src/vedika/application/services/crawling_service.py
-from enum import StrEnum
 
 from loguru import logger
 from pydantic import UUID4
 
+from vedika.domain.types import CrawlStatus
 from vedika.infrastructure.crawlers.factory import build_crawler_dispatcher
 from vedika.infrastructure.db.factory import get_raw_repository
-
-
-class CrawlStatus(StrEnum):
-    SUCCESS = "success"
-    SKIPPED = "skipped"
-    FAILED = "failed"
 
 
 class CrawlerService:

@@ -52,8 +52,8 @@ arrow {
 ' ==============================================================================
 ' ARROW MACROS (BOLD & STYLED)
 ' ==============================================================================
-!$USE = ".[bold].>"
-!$FLOW = "-[bold]->"
+!$USE = ".[#red,thickness=2].>"
+!$FLOW = "-[thickness=2]->"
 !$EXTENDS = "-[bold]-|>"
 !$HEAVY_FLOW = "-[thickness=3]->"
 !$IMPLEMENTS = ".[bold].|>"
@@ -78,8 +78,8 @@ package "ETL Data Pipeline System" #line:Red;line.bold;back:White {
 
         class Settings <<pydantic.BaseModel>> {
             + database_type: Literal['mongo', 'postgres']
-            - mongo: Optional[MongoConfig]
-            + load_settings(): Settings
+            + connections: dict
+            + storage_routes: dict
         }
     }
 
@@ -88,36 +88,72 @@ package "ETL Data Pipeline System" #line:Red;line.bold;back:White {
     ' ==============================================================================
     package "$ICON_ORCH Orchestration Layer (ZenML)" #line:Gray;line.bold {
         class "Pipeline: digital_data_etl" as Pipeline <<@pipeline>> #line:blue;line.bold;back:LightYellow {
-            + with_options(enable_cache=False)
+            + user_full_name: str
+            + links: list[str]
         }
 
         class "Step: get_or_create_user" as Step1 <<@step>> {
-            + get_or_create_user(user_full_name: str): Annotated[UserDomain, "user"]
+            + get_or_create_user(user_full_name: str)
         }
 
         class "Step: crawl_links" as Step2 <<@step>> {
-            + crawl_links(user: UserDomain, links: list[str]): Annotated[list[str] | None, "crawled_links"]
+            + crawl_links(user, urls, force_recrawl)
+        }
+
+        class "Step: clean_documents" as Step3 <<@step>> {
+            + clean_documents(category, force_reclean)
+        }
+
+        class CrawlMetadataTracker {
+            + record(url: str, status: CrawlStatus)
+            + full_metadata: dict
         }
     }
 
     ' ==============================================================================
-    ' APPLICATION LAYER (CRAWLERS)
+    ' APPLICATION LAYER (USE CASES, SERVICES, PORT INTERFACES)
     ' ==============================================================================
     package "$ICON_APP Application Layer" {
-        class CrawlerFactory {
-            + build_crawler_dispatcher(): CrawlerDispatcher
+
+        package "Services (Use Cases)" {
+            class CrawlerService {
+                + crawl_and_save(url, user_id, force_recrawl): CrawlStatus
+            }
+            class CleaningService {
+                + clean(data: BaseRawDomain): BaseCleanedDomain
+                + clean_and_save_category(category, force_reclean): dict
+            }
         }
 
-        class CrawlerDispatcher {
-            + get_crawler(url: str): BaseCrawler
+        package "Preprocessing" {
+            class CleaningHandlerFactory {
+                + create_handler(category): BaseCleaningHandler
+            }
+            class CodebaseCleaningHandler {
+                + clean(data: CodebaseRawDomain): CodebaseCleanedDomain
+            }
         }
 
-        abstract class BaseCrawler {
-            + extract(url: str, user_id: UUID, user_full_name: str): DocumentDomain
-        }
-
-        class GithubCrawler {
-            + extract(url: str, user_id: UUID, user_full_name: str): CodebaseDocumentDomain
+        package "Interfaces (Ports)" {
+            interface BaseCrawler {
+                + category: DataCategory
+                + extract(url, user_id): BaseRawDomain
+            }
+            interface BaseCleaningHandler<<Generic[RawT, CleanT]>> {
+                + clean(data: RawT): CleanT
+            }
+            interface BaseUserRepository {
+                + get_or_create_user(first_name, last_name)
+            }
+            interface BaseRawRepository<<Generic[RawT]>> {
+                + exists_by_url(url: str): bool
+                + save(document: RawT): None
+                + get_all(): Iterator[RawT]
+            }
+            interface BaseCleanedRepository<<Generic[CleanT]>> {
+                + exists_by_id(id: UUID): bool
+                + save(document: CleanT): None
+            }
         }
     }
 
@@ -129,45 +165,41 @@ package "ETL Data Pipeline System" #line:Red;line.bold;back:White {
             USERS
             CODEBASES
             ARTICLES
-            POSTS
         }
 
-        ' Entities
+        enum DataState <<StrEnum>> {
+            RAW
+            CLEANED
+            CHUNKED
+        }
+
         class UserDomain <<BaseModel>> {
             + id: UUID = Field(default_factory=uuid4)
-            + category: Literal[DataCategory.USERS] = DataCategory.USERS
             + first_name: str
-            # last_name: str
-            ~ bio: Optional[str] = None
-            --
+            + last_name: str
             + full_name(): str <<property>>
         }
 
-        abstract class DocumentDomain <<BaseModel>> {
-            + id: UUID = Field(default_factory=uuid4)
-            + title: str
-            + category: DataCategory
-            + source_url: HttpUrl
-            + platform: str
-            + author_id: UUID
-            + author_full_name: str
+        abstract class BaseRawDomain <<BaseModel>> {
+            + id: UUID
             + content: str
-            --
-            + word_count(): int <<property>>
+            + category: DataCategory
+            + state: DataState = RAW
         }
 
-        class CodebaseDocumentDomain <<DocumentDomain>> {
-            + category: Literal[DataCategory.CODEBASES] = DataCategory.CODEBASES
-            + name: str
+        abstract class BaseCleanedDomain <<BaseModel>> {
+            + id: UUID
+            + content: str
+            + category: DataCategory
+            + state: DataState = CLEANED
         }
 
-        ' Interfaces
-        interface BaseUserRepository<<Generic[U]>> {
-            + get_or_create_user(first_name: str, last_name: str): U
+        class CodebaseRawDomain <<BaseRawDomain>> {
+            + category = CODEBASES
         }
 
-        interface BaseDocumentRepository<<Generic[T]>> {
-            + save(document: T): None
+        class CodebaseCleanedDomain <<BaseCleanedDomain>> {
+            + category = CODEBASES
         }
     }
 
@@ -175,53 +207,39 @@ package "ETL Data Pipeline System" #line:Red;line.bold;back:White {
     ' INFRASTRUCTURE LAYER (ADAPTERS & DB)
     ' ==============================================================================
     package "$ICON_INFRA Infrastructure Layer" {
-        class DBFactory <<Singleton>> {
-            - _repository_cache: dict[DataCategory, Repository]
-            - _initialize_repositories(): None
-            + get_user_repository(): BaseUserRepository
-            + get_document_repository(category: DataCategory): BaseDocumentRepository
+
+        package "Crawlers Adapter" {
+            class CrawlerRegistry {
+                + get_crawler(url: str): BaseCrawler
+            }
+            class GithubCrawler {
+                + category = CODEBASES
+                + extract(url, user_id): CodebaseRawDomain
+            }
         }
 
-        class MongoUserRepository {
-            + get_or_create_user(first_name: str, last_name: str): UserDomain
+        package "Database Adapters" {
+            class DBFactory <<Singleton>> {
+                + get_user_repository(): BaseUserRepository
+                + get_raw_repository(category): BaseRawRepository
+                + get_cleaned_repository(category): BaseCleanedRepository
+            }
+
+            class UserMongoRepository {
+                + get_or_create_user(...)
+            }
+
+            class CodebaseRawMongoRepository {
+                + save(document: CodebaseRawDomain)
+                + get_all(): Iterator[CodebaseRawDomain]
+            }
+
+            class CodebaseCleanedMongoRepository {
+                + save(document: CodebaseCleanedDomain)
+            }
         }
 
-        class MongoCodebaseRepository {
-            + save(document: CodebaseDocumentDomain): None
-        }
-
-        abstract class NoSQLBaseDocument <<BaseModel>> {
-            + save(**kwargs): Self | None
-            + to_mongo(**kwargs): dict
-            + _get_collection(): Collection
-        }
-
-        abstract class MongoDocument <<NoSQLBaseDocument>> {
-            + title: str
-            + link: str
-            + platform: str
-            + author_id: UUID4 = Field(alias="author_id")
-            + author_full_name: str = Field(alias="author_full_name")
-            + content: str
-            --
-            + Settings.collection_name = "_abstract_document_"
-        }
-
-        class MongoUserDocument <<NoSQLBaseDocument>> {
-            + first_name: str
-            + last_name: str
-            --
-            + full_name(): str <<property>>
-            + Settings.collection_name = DataCategory.USERS
-        }
-
-        class MongoCodebaseDocument <<MongoDocument>> {
-            + codebase_name: str
-            --
-            + Settings.collection_name = DataCategory.CODEBASES
-        }
-
-        database "MongoDB Storage\n(Collections via DataCategory)\n" as Database
+        database "MongoDB\n(Raw & Cleaned Collections)" as Database
     }
 }
 
@@ -231,44 +249,47 @@ package "ETL Data Pipeline System" #line:Red;line.bold;back:White {
 
 ' Execution Flow
 Entrypoint $FLOW Pipeline : "Triggers"
-Entrypoint $FLOW Settings : "Loads"
 Pipeline $COMPOSES Step1
 Pipeline $COMPOSES Step2
+Pipeline $COMPOSES Step3
 
 ' Step 1 (User Flow)
 Step1 $FLOW DBFactory : "1. get_user_repository()"
-Step1 $FLOW BaseUserRepository : "2. get_or_create_user(...)"
+Step1 $FLOW BaseUserRepository : "2. get_or_create_user()"
 
-' Step 2 (Crawler Flow)
-Step2 $FLOW CrawlerFactory : "3. build_crawler_dispatcher()"
-CrawlerFactory $FLOW CrawlerDispatcher : "Instantiates"
-CrawlerDispatcher $FLOW GithubCrawler : "Routes Github URLs"
-GithubCrawler $USE CodebaseDocumentDomain : "4. Extracts Domain Entity"
+' Step 2 (Crawler Orchestration)
+Step2 $FLOW CrawlerService : "3. crawl_and_save()"
+Step2 $USE CrawlMetadataTracker : "Tracks metrics"
+CrawlerService $FLOW CrawlerRegistry : "Resolves Crawler"
+CrawlerRegistry $FLOW GithubCrawler : "Returns Instance"
+GithubCrawler $USE CodebaseRawDomain : "Extracts Raw Entity"
+CrawlerService $FLOW DBFactory : "Gets RawRepo"
+CrawlerService $FLOW BaseRawRepository : "4. save(raw_domain)"
 
-' Step 2 (Save Flow)
-Step2 $FLOW DBFactory : "5. get_document_repository(category)"
-Step2 $FLOW BaseDocumentRepository : "6. save(document)"
+' Step 3 (Cleaning Orchestration)
+Step3 $FLOW CleaningService : "5. clean_and_save_category()"
+CleaningService $FLOW BaseRawRepository : "Reads Iterator"
+CleaningService $FLOW CleaningHandlerFactory : "Gets Handler"
+CleaningHandlerFactory $FLOW CodebaseCleaningHandler : "Returns Instance"
+CodebaseCleaningHandler $USE CodebaseCleanedDomain : "6. Transforms to Cleaned Entity"
+CleaningService $FLOW DBFactory : "Gets CleanedRepo"
+CleaningService $FLOW BaseCleanedRepository : "7. save(cleaned_domain)"
 
-' Infrastructure Implementations (Factory)
-DBFactory $USE MongoUserRepository : "Caches & Returns"
-DBFactory $USE MongoCodebaseRepository : "Caches & Returns"
+' Infrastructure Implementations (Interface Fulfillment)
+UserMongoRepository $IMPLEMENTS_RED BaseUserRepository
+CodebaseRawMongoRepository $IMPLEMENTS_RED BaseRawRepository
+CodebaseCleanedMongoRepository $IMPLEMENTS_RED BaseCleanedRepository
+GithubCrawler $IMPLEMENTS_RED BaseCrawler
+CodebaseCleaningHandler $IMPLEMENTS_RED BaseCleaningHandler
 
-' Interface Fulfillment
-MongoUserRepository $IMPLEMENTS_RED BaseUserRepository
-MongoCodebaseRepository $IMPLEMENTS_RED BaseDocumentRepository
+' Domain Inheritance
+CodebaseRawDomain $EXTENDS_BLUE_AGG BaseRawDomain
+CodebaseCleanedDomain $EXTENDS_BLUE_AGG BaseCleanedDomain
 
-' Infrastructure Mapping
-MongoUserRepository $USE MongoUserDocument : "Maps Domain to ODM"
-MongoCodebaseRepository $USE MongoCodebaseDocument : "Maps Domain to ODM"
-NoSQLBaseDocument $AGGREGATES_RED Database : "PyMongo Operations"
-
-' Domain & ODM Inheritance
-CodebaseDocumentDomain $EXTENDS_BLUE_AGG DocumentDomain
-GithubCrawler $EXTENDS_BLUE_AGG BaseCrawler
-MongoUserDocument $EXTENDS_BLUE_AGG NoSQLBaseDocument
-MongoDocument $EXTENDS_BLUE_AGG NoSQLBaseDocument
-MongoCodebaseDocument $EXTENDS_RED_COMP MongoDocument
-DocumentDomain $USE DataCategory : "Uses"
+' DB Operations
+UserMongoRepository $AGGREGATES_RED Database
+CodebaseRawMongoRepository $AGGREGATES_RED Database
+CodebaseCleanedMongoRepository $AGGREGATES_RED Database
 
 ' ==============================================================================
 ' DIAGRAM LEGEND

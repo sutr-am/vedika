@@ -36,7 +36,7 @@ class BaseRawRepository(Generic[RawT], ABC):
         pass
 
 
-class BaseCleanedRepository(Generic[CleanT], ABC):
+class BaseCleanedRepository(ABC, Generic[CleanT]):
     @abstractmethod
     def exists_by_id(self, document_id: UUID) -> bool:
         """Checks if a cleaned document already exists by its original **document_id**"""
