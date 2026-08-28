@@ -75,7 +75,7 @@ class GithubCrawler(BaseCrawler):
                 content_str += header + file_content + footer
         return content_str
 
-    def extract(self, url: str, user_id: UUID4, user_full_name: str) -> CodebaseRawDomain:
+    def extract(self, url: str, user_id: UUID4) -> CodebaseRawDomain:
         """
         Orchestrates the crawling process and saves the resulting CodebaseDocument
         """

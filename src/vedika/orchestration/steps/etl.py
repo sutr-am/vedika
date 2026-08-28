@@ -20,15 +20,11 @@ def crawl_urls(
     for url in tqdm(urls):
         # the service handle the dedupe check, crawler routing and database save
         # the zenml step just tells it to run
-        status = service.crawl_and_save(
-            url=url,
-            user_id=user.id,
-            user_full_name=user.full_name,
-            force_recrawl=force_recrawl,
-        )
-
+        status = service.crawl_and_save(url=url, user_id=user.id, force_recrawl=force_recrawl)
         tracker.record(url=url, status=status)
 
+        # necessary because different host will be captured in different struct in the metadata
+        # so, can't use the  metadata here. Need to capture the successuly crawled urls separately
         if status == CrawlStatus.SUCCESS:
             successful_urls.append(url)
 

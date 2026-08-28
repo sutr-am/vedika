@@ -19,7 +19,7 @@ class CrawlerService:
         self,
         url: str,
         user_id: UUID4,
-        user_full_name: str,
+        # user_full_name: str,
         force_recrawl: bool = False,
     ) -> CrawlStatus:
         """Return True if successful, False otherwise"""
@@ -30,7 +30,7 @@ class CrawlerService:
             if not force_recrawl and repository.exists_by_url(url=url):
                 logger.info(f"Skipping {url}. Already exists")
                 return CrawlStatus.SKIPPED
-            data = crawler.extract(url=url, user_id=user_id, user_full_name=user_full_name)
+            data = crawler.extract(url=url, user_id=user_id)
             repository.save(data)
             return CrawlStatus.SUCCESS
         except Exception as e:
