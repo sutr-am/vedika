@@ -8,11 +8,6 @@ from vedika.domain.types import DataCategory
 
 
 class BaseCrawler(ABC):
-    """
-    Abstract Base class for all Base Crawlers.
-    Uses Dependency Injection to receive a database repository.
-    """
-
     category: DataCategory
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -24,7 +19,10 @@ class BaseCrawler(ABC):
 
     @abstractmethod
     def extract(self, url: str, user_id: UUID4) -> BaseRawDomain:
-        """
-        Extracts data from the URL and saves it using the Repository.
-        """
+        pass
+
+
+class BaseCrawlerRouter(ABC):
+    @abstractmethod
+    def get_crawler(self, url: str) -> BaseCrawler:
         pass

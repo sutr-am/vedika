@@ -29,11 +29,11 @@ class CrawlMetadataTracker:
         self._metadata[host].urls_by_status[status].append(url)
 
     @property
-    def full_metadata(self) -> dict:
+    def full_metadata(self) -> dict[str, dict]:
         return {host: data.model_dump(mode="json") for host, data in self._metadata.items()}
 
     @property
-    def summary_counts(self):
+    def summary_counts(self) -> dict[str, dict[str, int]]:
         return {host: data.counts for host, data in self._metadata.items()}
 
 
@@ -53,7 +53,7 @@ class UserMetadataTracker:
 
     @property
     def full_metadata(self) -> dict:
-        if not self._metadata:
+        if self._metadata is None:
             return {}
 
         return self._metadata.model_dump(mode="json")

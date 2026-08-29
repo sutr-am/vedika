@@ -3,33 +3,35 @@
 from loguru import logger
 from pydantic import UUID4
 
+from vedika.application.interfaces.crawlers import BaseCrawlerRouter
+from vedika.application.interfaces.providers import BaseRepositoryProvider
+from vedika.application.interfaces.repositories import BaseRawRepository
 from vedika.domain.types import CrawlStatus
-from vedika.infrastructure.crawlers.factory import build_crawler_dispatcher
-from vedika.infrastructure.db.factory import get_raw_repository
 
 
 class CrawlerService:
-    """Orchestrates extractions and raw persistence"""
-
-    def __init__(self):
-        # the service know where the factories are
-        self._crawler_registry = build_crawler_dispatcher()
+    def __init__(
+        self, crawler_router: BaseCrawlerRouter, repository_provider: BaseRepositoryProvider
+    ) -> None:
+        self._crawler_router = crawler_router
+        self._repository_provider = repository_provider
 
     def crawl_and_save(
         self,
         url: str,
         user_id: UUID4,
-        # user_full_name: str,
         force_recrawl: bool = False,
     ) -> CrawlStatus:
-        """Return True if successful, False otherwise"""
         try:
-            crawler = self._crawler_registry.get_crawler(url=url)
-            category = crawler.category
-            repository = get_raw_repository(category=category)
+            crawler = self._crawler_router.get_crawler(url=url)
+            repository: BaseRawRepository = self._repository_provider.get_raw_repository(
+                category=crawler.category
+            )
+
             if not force_recrawl and repository.exists_by_url(url=url):
                 logger.info(f"Skipping {url}. Already exists")
                 return CrawlStatus.SKIPPED
+
             data = crawler.extract(url=url, user_id=user_id)
             repository.save(data)
             return CrawlStatus.SUCCESS

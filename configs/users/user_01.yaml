@@ -1,5 +1,7 @@
 parameters:
     user_full_name: "user one"
+    user_first_name: "user"
+    user_last_name: "one"
     links:
         - "https://github.com/imflash217/portfolio"
         - "https://github.com/sutr-am/vedika"
