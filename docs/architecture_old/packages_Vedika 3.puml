@@ -1,0 +1,168 @@
+@startuml packages_Vedika
+set namespaceSeparator none
+package "vedika" as vedika {
+}
+package "vedika.application" as vedika.application {
+}
+package "vedika.application.interfaces" as vedika.application.interfaces {
+}
+package "vedika.application.interfaces.cleaners" as vedika.application.interfaces.cleaners {
+}
+package "vedika.application.interfaces.crawlers" as vedika.application.interfaces.crawlers {
+}
+package "vedika.application.interfaces.repositories" as vedika.application.interfaces.repositories {
+}
+package "vedika.application.preprocessing" as vedika.application.preprocessing {
+}
+package "vedika.application.preprocessing.cleaning" as vedika.application.preprocessing.cleaning {
+}
+package "vedika.application.preprocessing.cleaning.codebase" as vedika.application.preprocessing.cleaning.codebase {
+}
+package "vedika.application.preprocessing.cleaning.factory" as vedika.application.preprocessing.cleaning.factory {
+}
+package "vedika.application.services" as vedika.application.services {
+}
+package "vedika.application.services.cleaning_service" as vedika.application.services.cleaning_service {
+}
+package "vedika.application.services.crawling_service" as vedika.application.services.crawling_service {
+}
+package "vedika.domain" as vedika.domain {
+}
+package "vedika.domain.cleaned" as vedika.domain.cleaned {
+}
+package "vedika.domain.raw" as vedika.domain.raw {
+}
+package "vedika.domain.types" as vedika.domain.types {
+}
+package "vedika.domain.users" as vedika.domain.users {
+}
+package "vedika.infrastructure" as vedika.infrastructure {
+}
+package "vedika.infrastructure.crawlers" as vedika.infrastructure.crawlers {
+}
+package "vedika.infrastructure.crawlers.factory" as vedika.infrastructure.crawlers.factory {
+}
+package "vedika.infrastructure.crawlers.github" as vedika.infrastructure.crawlers.github {
+}
+package "vedika.infrastructure.db" as vedika.infrastructure.db {
+}
+package "vedika.infrastructure.db.factory" as vedika.infrastructure.db.factory {
+}
+package "vedika.infrastructure.db.mongo" as vedika.infrastructure.db.mongo {
+}
+package "vedika.infrastructure.db.mongo.base" as vedika.infrastructure.db.mongo.base {
+}
+package "vedika.infrastructure.db.mongo.connection" as vedika.infrastructure.db.mongo.connection {
+}
+package "vedika.infrastructure.db.mongo.models" as vedika.infrastructure.db.mongo.models {
+}
+package "vedika.infrastructure.db.mongo.repositories" as vedika.infrastructure.db.mongo.repositories {
+}
+package "vedika.infrastructure.db.qdrant" as vedika.infrastructure.db.qdrant {
+}
+package "vedika.infrastructure.db.qdrant.base" as vedika.infrastructure.db.qdrant.base {
+}
+package "vedika.infrastructure.db.qdrant.connection" as vedika.infrastructure.db.qdrant.connection {
+}
+package "vedika.infrastructure.db.qdrant.models" as vedika.infrastructure.db.qdrant.models {
+}
+package "vedika.infrastructure.db.qdrant.repositories" as vedika.infrastructure.db.qdrant.repositories {
+}
+package "vedika.infrastructure.models" as vedika.infrastructure.models {
+}
+package "vedika.infrastructure.models.factory" as vedika.infrastructure.models.factory {
+}
+package "vedika.orchestration" as vedika.orchestration {
+}
+package "vedika.orchestration.pipelines" as vedika.orchestration.pipelines {
+}
+package "vedika.orchestration.pipelines.etl" as vedika.orchestration.pipelines.etl {
+}
+package "vedika.orchestration.pipelines.feature_engineering" as vedika.orchestration.pipelines.feature_engineering {
+}
+package "vedika.orchestration.steps" as vedika.orchestration.steps {
+}
+package "vedika.orchestration.steps.etl" as vedika.orchestration.steps.etl {
+}
+package "vedika.orchestration.steps.feature_engineering" as vedika.orchestration.steps.feature_engineering {
+}
+package "vedika.orchestration.steps.retrieve" as vedika.orchestration.steps.retrieve {
+}
+package "vedika.orchestration.steps.users" as vedika.orchestration.steps.users {
+}
+package "vedika.orchestration.utils" as vedika.orchestration.utils {
+}
+package "vedika.orchestration.utils.trackers" as vedika.orchestration.utils.trackers {
+}
+package "vedika.settings" as vedika.settings {
+}
+vedika.application.interfaces.cleaners --> vedika.domain.cleaned
+vedika.application.interfaces.cleaners --> vedika.domain.raw
+vedika.application.interfaces.crawlers --> vedika.domain.raw
+vedika.application.interfaces.crawlers --> vedika.domain.types
+vedika.application.interfaces.repositories --> vedika.domain.cleaned
+vedika.application.interfaces.repositories --> vedika.domain.raw
+vedika.application.interfaces.repositories --> vedika.domain.users
+vedika.application.preprocessing.cleaning.codebase --> vedika.application.interfaces.cleaners
+vedika.application.preprocessing.cleaning.codebase --> vedika.domain.cleaned
+vedika.application.preprocessing.cleaning.codebase --> vedika.domain.raw
+vedika.application.preprocessing.cleaning.factory --> vedika.application.interfaces.cleaners
+vedika.application.preprocessing.cleaning.factory --> vedika.application.preprocessing.cleaning.codebase
+vedika.application.preprocessing.cleaning.factory --> vedika.domain.types
+vedika.application.services.cleaning_service --> vedika.application.preprocessing.cleaning.factory
+vedika.application.services.cleaning_service --> vedika.domain.cleaned
+vedika.application.services.cleaning_service --> vedika.domain.raw
+vedika.application.services.crawling_service --> vedika.infrastructure.crawlers.factory
+vedika.application.services.crawling_service --> vedika.infrastructure.db.factory
+vedika.domain.cleaned --> vedika.domain.types
+vedika.domain.raw --> vedika.domain.types
+vedika.domain.users --> vedika.domain.types
+vedika.infrastructure.crawlers.factory --> vedika.application.interfaces.crawlers
+vedika.infrastructure.crawlers.factory --> vedika.infrastructure.crawlers.github
+vedika.infrastructure.crawlers.github --> vedika.application.interfaces.crawlers
+vedika.infrastructure.crawlers.github --> vedika.domain.raw
+vedika.infrastructure.crawlers.github --> vedika.domain.types
+vedika.infrastructure.crawlers.github --> vedika.infrastructure.crawlers.github
+vedika.infrastructure.db.factory --> vedika.application.interfaces.repositories
+vedika.infrastructure.db.factory --> vedika.domain.types
+vedika.infrastructure.db.factory --> vedika.infrastructure.db.mongo.repositories
+vedika.infrastructure.db.factory --> vedika.settings
+vedika.infrastructure.db.mongo.base --> vedika.infrastructure.db.mongo.connection
+vedika.infrastructure.db.mongo.connection --> vedika.settings
+vedika.infrastructure.db.mongo.models --> vedika.domain.types
+vedika.infrastructure.db.mongo.models --> vedika.infrastructure.db.mongo.base
+vedika.infrastructure.db.mongo.models --> vedika.settings
+vedika.infrastructure.db.mongo.repositories --> vedika.application.interfaces.repositories
+vedika.infrastructure.db.mongo.repositories --> vedika.domain.cleaned
+vedika.infrastructure.db.mongo.repositories --> vedika.domain.raw
+vedika.infrastructure.db.mongo.repositories --> vedika.domain.users
+vedika.infrastructure.db.mongo.repositories --> vedika.infrastructure.db.mongo.models
+vedika.infrastructure.db.qdrant.base --> vedika.infrastructure.db.qdrant.connection
+vedika.infrastructure.db.qdrant.connection --> vedika.settings
+vedika.infrastructure.db.qdrant.models --> vedika.infrastructure.db.qdrant.base
+vedika.infrastructure.db.qdrant.repositories --> vedika.application.interfaces.repositories
+vedika.infrastructure.db.qdrant.repositories --> vedika.domain
+vedika.infrastructure.db.qdrant.repositories --> vedika.infrastructure.db.qdrant
+vedika.orchestration.pipelines.etl --> vedika.orchestration.steps.etl
+vedika.orchestration.pipelines.etl --> vedika.orchestration.steps.users
+vedika.orchestration.pipelines.feature_engineering --> vedika.domain.types
+vedika.orchestration.pipelines.feature_engineering --> vedika.orchestration.steps.feature_engineering
+vedika.orchestration.pipelines.feature_engineering --> vedika.orchestration.steps.retrieve
+vedika.orchestration.steps.etl --> vedika
+vedika.orchestration.steps.etl --> vedika.application.services.crawling_service
+vedika.orchestration.steps.etl --> vedika.domain.users
+vedika.orchestration.steps.etl --> vedika.orchestration.utils.trackers
+vedika.orchestration.steps.feature_engineering --> vedika.application.preprocessing.cleaning
+vedika.orchestration.steps.feature_engineering --> vedika.domain.cleaned
+vedika.orchestration.steps.feature_engineering --> vedika.domain.raw
+vedika.orchestration.steps.feature_engineering --> vedika.infrastructure.db.factory
+vedika.orchestration.steps.retrieve --> vedika.domain.raw
+vedika.orchestration.steps.retrieve --> vedika.domain.types
+vedika.orchestration.steps.retrieve --> vedika.infrastructure.db.factory
+vedika.orchestration.steps.users --> vedika.application.interfaces.repositories
+vedika.orchestration.steps.users --> vedika.domain.users
+vedika.orchestration.steps.users --> vedika.infrastructure.db.factory
+vedika.orchestration.steps.users --> vedika.orchestration.utils.trackers
+vedika.orchestration.utils.trackers --> vedika.application.services.crawling_service
+vedika.orchestration.utils.trackers --> vedika.domain.users
+@enduml

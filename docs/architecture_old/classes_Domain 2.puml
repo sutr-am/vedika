@@ -1,0 +1,52 @@
+@startuml classes_Domain
+set namespaceSeparator none
+class "BaseCleanedDomain" as vedika.domain.cleaned.BaseCleanedDomain {
+  category
+  content : str
+  id : UUID
+  platform : str
+  source_url : HttpUrl
+  state
+  title : str
+  user_id : UUID
+  word_count : int
+}
+class "BaseRawDomain" as vedika.domain.raw.BaseRawDomain {
+  category
+  content : str
+  id : Optional[UUID]
+  platform : str
+  source_url : HttpUrl
+  state
+  title : str
+  user_id : UUID
+  word_count : int
+}
+class "CodebaseCleanedDomain" as vedika.domain.cleaned.CodebaseCleanedDomain {
+  category
+}
+class "CodebaseRawDomain" as vedika.domain.raw.CodebaseRawDomain {
+  category
+}
+class "DataCategory" as vedika.domain.types.DataCategory {
+  name
+}
+class "DataState" as vedika.domain.types.DataState {
+  name
+}
+class "UserDomain" as vedika.domain.users.UserDomain {
+  category : Literal[DataCategory.USERS]
+  first_name : str
+  full_name : str
+  id : Optional[UUID]
+  last_name : str
+}
+vedika.domain.cleaned.CodebaseCleanedDomain --|> vedika.domain.cleaned.BaseCleanedDomain
+vedika.domain.raw.CodebaseRawDomain --|> vedika.domain.raw.BaseRawDomain
+vedika.domain.cleaned.BaseCleanedDomain --> vedika.domain.types.DataCategory : category
+vedika.domain.cleaned.CodebaseCleanedDomain --> vedika.domain.types.DataCategory : category
+vedika.domain.raw.BaseRawDomain --> vedika.domain.types.DataCategory : category
+vedika.domain.raw.CodebaseRawDomain --> vedika.domain.types.DataCategory : category
+vedika.domain.cleaned.BaseCleanedDomain --> vedika.domain.types.DataState : state
+vedika.domain.raw.BaseRawDomain --> vedika.domain.types.DataState : state
+@enduml

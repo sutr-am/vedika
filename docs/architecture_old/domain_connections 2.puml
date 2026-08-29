@@ -1,0 +1,44 @@
+@startuml
+'!theme blueprint
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #F4F6F8
+skinparam classBorderColor #2C3E50
+skinparam classFontColor #1A1A1A
+skinparam ArrowColor #E74C3C
+skinparam shadowing false
+hide empty members
+skinparam dpi 600
+
+class BaseCleanedDomain {
+    + id : UUID
+    + title : str
+    + content : str
+    + platform : str
+    + source_url : HttpUrl
+    + user_id : UUID
+    + category : DataCategory
+    + state : DataState
+    + data : Any
+}
+
+
+class CleaningService {
+}
+
+
+class BaseRawDomain {
+    + id : UUID
+    + title : str
+    + content : str
+    + platform : str
+    + source_url : HttpUrl
+    + user_id : UUID
+    + category : DataCategory
+    + state : DataState
+    + data : Any
+}
+
+CleaningService .[#1ABC9C].> BaseRawDomain : uses
+CleaningService -[#8E44AD]-> BaseCleanedDomain : returns
+BaseCleanedDomain -[#3498DB]-|> BaseRawDomain : inherits
+@enduml

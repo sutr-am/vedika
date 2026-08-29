@@ -1,0 +1,250 @@
+@startuml classes_Vedika_Full
+set namespaceSeparator none
+class "BaseCleanedDomain" as vedika.domain.cleaned.BaseCleanedDomain {
+  category
+  content : str
+  id : UUID
+  platform : str
+  source_url : HttpUrl
+  state
+  title : str
+  user_id : UUID
+  word_count : int
+}
+class "BaseCleanedRepository" as vedika.application.interfaces.repositories.BaseCleanedRepository {
+  {abstract}exists_by_id(document_id: UUID) -> bool
+  {abstract}get_by_id(document_id: UUID) -> CleanT | None
+  {abstract}save(document: CleanT) -> None
+}
+class "BaseCleaningHandler" as vedika.application.interfaces.cleaners.BaseCleaningHandler {
+  {abstract}clean(data: RawT) -> CleanT
+}
+class "BaseCrawler" as vedika.application.interfaces.crawlers.BaseCrawler {
+  category
+  {abstract}extract(url: str, user_id: UUID4, user_full_name: str) -> BaseRawDomain
+}
+class "BaseMongoDocument" as vedika.infrastructure.db.mongo.base.BaseMongoDocument {
+  created_at : Optional[datetime]
+  id : Optional[UUID4]
+  updated_at : Optional[datetime]
+  find() -> MongoDocT | None
+  find_all() -> list[MongoDocT] | None
+  from_mongo(data: dict[str, Any] | None) -> MongoDocT | None
+  get_collection_name() -> str
+  get_connection_name() -> str
+  save() -> MongoDocT | None
+  to_mongo() -> dict[str, Any]
+}
+class "BaseRawDomain" as vedika.domain.raw.BaseRawDomain {
+  category
+  content : str
+  id : Optional[UUID]
+  platform : str
+  source_url : HttpUrl
+  state
+  title : str
+  user_id : UUID
+  word_count : int
+}
+class "BaseRawRepository" as vedika.application.interfaces.repositories.BaseRawRepository {
+  {abstract}exists_by_url(url: str) -> bool
+  {abstract}get_all() -> list[RawT]
+  {abstract}save(document: RawT) -> None
+}
+class "BaseUserRepository" as vedika.application.interfaces.repositories.BaseUserRepository {
+  {abstract}get_or_create_user(first_name: str, last_name: str) -> UserT
+}
+class "CategoryRouteConfig" as vedika.settings.CategoryRouteConfig {
+  cleaned
+  raw
+}
+class "ChunkDocument" as vedika.infrastructure.db.qdrant.models.ChunkDocument {
+  author_full_name : str
+  author_id : UUID
+  content : str
+  document_id : UUID
+  platform : str
+}
+class "CleaningHandlerFactory" as vedika.application.preprocessing.cleaning.factory.CleaningHandlerFactory {
+  create_handler(category: DataCategory) -> BaseCleaningHandler
+}
+class "CleaningService" as vedika.application.services.cleaning_service.CleaningService {
+  clean(data: BaseRawDomain) -> BaseCleanedDomain
+}
+class "CodebaseChunkDocument" as vedika.infrastructure.db.qdrant.models.CodebaseChunkDocument {
+}
+class "CodebaseCleanedDomain" as vedika.domain.cleaned.CodebaseCleanedDomain {
+  category
+}
+class "CodebaseCleanedMongoDocument" as vedika.infrastructure.db.mongo.models.CodebaseCleanedMongoDocument {
+  category
+  content : str
+  platform : str
+  source_url : HttpUrl
+  state
+  title : str
+  user_id
+}
+class "CodebaseCleanedMongoRepository" as vedika.infrastructure.db.mongo.repositories.CodebaseCleanedMongoRepository {
+  exists_by_id(document_id: UUID) -> bool
+  get_by_id(document_id: UUID) -> CodebaseCleanedDomain | None
+  save(document: CodebaseCleanedDomain) -> None
+}
+class "CodebaseCleaningHandler" as vedika.application.preprocessing.cleaning.codebase.CodebaseCleaningHandler {
+  clean(data: CodebaseRawDomain) -> CodebaseCleanedDomain
+}
+class "CodebaseRawDomain" as vedika.domain.raw.CodebaseRawDomain {
+  category
+}
+class "CodebaseRawMongoDocument" as vedika.infrastructure.db.mongo.models.CodebaseRawMongoDocument {
+  category
+  content : str
+  platform : str
+  source_url : HttpUrl
+  state
+  title : str
+  user_id
+}
+class "CodebaseRawMongoRepository" as vedika.infrastructure.db.mongo.repositories.CodebaseRawMongoRepository {
+  exists_by_url(url: str) -> bool
+  get_all() -> list[CodebaseRawDomain]
+  save(document: CodebaseRawDomain) -> None
+}
+class "ConnectionConfig" as vedika.settings.ConnectionConfig {
+  db_name : str | None
+  driver : str
+  host : str | None
+  path : str | None
+}
+class "CrawlMetadataTracker" as vedika.orchestration.utils.trackers.CrawlMetadataTracker {
+  full_metadata
+  summary_counts
+  record(url: str, status: CrawlStatus) -> None
+}
+class "CrawlStatus" as vedika.application.services.crawling_service.CrawlStatus {
+  name
+}
+class "CrawlerDispatcher" as vedika.infrastructure.crawlers.factory.CrawlerDispatcher {
+  get_crawler(url: str) -> BaseCrawler
+  register(domain_keyword: str, crawler_instance: BaseCrawler) -> None
+}
+class "CrawlerService" as vedika.application.services.crawling_service.CrawlerService {
+  crawl_and_save(url: str, user_id: UUID4, user_full_name: str, force_recrawl: bool) -> CrawlStatus
+}
+class "DataCategory" as vedika.domain.types.DataCategory {
+  name
+}
+class "DataState" as vedika.domain.types.DataState {
+  name
+}
+class "GithubCrawler" as vedika.infrastructure.crawlers.github.GithubCrawler {
+  category
+  gh : Github
+  extract(url: str, user_id: UUID4, user_full_name: str) -> CodebaseRawDomain
+}
+class "MongoDatabaseConnector" as vedika.infrastructure.db.mongo.connection.MongoDatabaseConnector {
+  close(connection_name: str)
+  close_all()
+  get_client(connection_name: str) -> MongoClient
+  get_database(connection_name: str)
+}
+class "QdrantBaseDocument" as vedika.infrastructure.db.qdrant.base.QdrantBaseDocument {
+  created_at : Optional[datetime]
+  embedding : VectorStructOutput | list[float] | None
+  id : Optional[UUID4]
+  updated_at : Optional[datetime]
+  from_record(point: Record) -> T
+  get_collection_name() -> str
+  save() -> T | None
+  to_point() -> PointStruct
+}
+class "QdrantCodebaseRepository" as vedika.infrastructure.db.qdrant.repositories.QdrantCodebaseRepository {
+  save(chunk: CodebaseChunkDomain) -> None
+}
+class "QdrantDatabaseConnector" as vedika.infrastructure.db.qdrant.connection.QdrantDatabaseConnector {
+  close()
+  get_client() -> QdrantClient
+}
+class "Settings" as vedika.settings.Settings {
+  connections : dict[str, ConnectionConfig]
+  storage_routes
+  load_settings(config_name: str) -> Self
+}
+class "Settings" as vedika.infrastructure.db.qdrant.models.ChunkDocument.Settings {
+  collection_name : str
+}
+class "Settings" as vedika.infrastructure.db.qdrant.models.CodebaseChunkDocument.Settings {
+  collection_name : str
+}
+class "Settings" as vedika.infrastructure.db.mongo.models.UserMongoDocument.Settings {
+  collection_name : str
+  connection_name : str
+}
+class "Settings" as vedika.infrastructure.db.mongo.models.CodebaseRawMongoDocument.Settings {
+  collection_name : str
+  connection_name : str
+}
+class "Settings" as vedika.infrastructure.db.mongo.models.CodebaseCleanedMongoDocument.Settings {
+  collection_name : str
+  connection_name : str
+}
+class "StateRouteConfig" as vedika.settings.StateRouteConfig {
+  connection : str
+  target : str
+}
+class "StorageRouteConfig" as vedika.settings.StorageRouteConfig {
+  categories : dict[str, CategoryRouteConfig]
+  users
+  get_route(category_name: str, state: str) -> StateRouteConfig | None
+}
+class "UserDomain" as vedika.domain.users.UserDomain {
+  category : Literal[DataCategory.USERS]
+  first_name : str
+  full_name : str
+  id : Optional[UUID]
+  last_name : str
+}
+class "UserMetadataTracker" as vedika.orchestration.utils.trackers.UserMetadataTracker {
+  full_metadata
+  record(user: UserDomain) -> None
+}
+class "UserMongoDocument" as vedika.infrastructure.db.mongo.models.UserMongoDocument {
+  category
+  first_name : str
+  full_name : str
+  last_name : str
+}
+class "UserMongoRepository" as vedika.infrastructure.db.mongo.repositories.UserMongoRepository {
+  get_or_create_user(first_name: str, last_name: str) -> UserDomain
+}
+vedika.application.preprocessing.cleaning.codebase.CodebaseCleaningHandler --|> vedika.application.interfaces.cleaners.BaseCleaningHandler
+vedika.domain.cleaned.CodebaseCleanedDomain --|> vedika.domain.cleaned.BaseCleanedDomain
+vedika.domain.raw.CodebaseRawDomain --|> vedika.domain.raw.BaseRawDomain
+vedika.infrastructure.crawlers.github.GithubCrawler --|> vedika.application.interfaces.crawlers.BaseCrawler
+vedika.infrastructure.db.mongo.models.CodebaseCleanedMongoDocument --|> vedika.infrastructure.db.mongo.base.BaseMongoDocument
+vedika.infrastructure.db.mongo.models.CodebaseRawMongoDocument --|> vedika.infrastructure.db.mongo.base.BaseMongoDocument
+vedika.infrastructure.db.mongo.models.UserMongoDocument --|> vedika.infrastructure.db.mongo.base.BaseMongoDocument
+vedika.infrastructure.db.mongo.repositories.CodebaseCleanedMongoRepository --|> vedika.application.interfaces.repositories.BaseCleanedRepository
+vedika.infrastructure.db.mongo.repositories.CodebaseRawMongoRepository --|> vedika.application.interfaces.repositories.BaseRawRepository
+vedika.infrastructure.db.mongo.repositories.UserMongoRepository --|> vedika.application.interfaces.repositories.BaseUserRepository
+vedika.infrastructure.db.qdrant.models.ChunkDocument --|> vedika.infrastructure.db.qdrant.base.QdrantBaseDocument
+vedika.infrastructure.db.qdrant.models.CodebaseChunkDocument --|> vedika.infrastructure.db.qdrant.models.ChunkDocument
+vedika.infrastructure.db.qdrant.models.CodebaseChunkDocument.Settings --|> vedika.infrastructure.db.qdrant.models.ChunkDocument.Settings
+vedika.application.interfaces.crawlers.BaseCrawler --> vedika.domain.types.DataCategory : category
+vedika.domain.cleaned.BaseCleanedDomain --> vedika.domain.types.DataCategory : category
+vedika.domain.cleaned.CodebaseCleanedDomain --> vedika.domain.types.DataCategory : category
+vedika.domain.raw.BaseRawDomain --> vedika.domain.types.DataCategory : category
+vedika.domain.raw.CodebaseRawDomain --> vedika.domain.types.DataCategory : category
+vedika.infrastructure.crawlers.github.GithubCrawler --> vedika.domain.types.DataCategory : category
+vedika.infrastructure.db.mongo.models.CodebaseCleanedMongoDocument --> vedika.domain.types.DataCategory : category
+vedika.infrastructure.db.mongo.models.CodebaseRawMongoDocument --> vedika.domain.types.DataCategory : category
+vedika.infrastructure.db.mongo.models.UserMongoDocument --> vedika.domain.types.DataCategory : category
+vedika.domain.cleaned.BaseCleanedDomain --> vedika.domain.types.DataState : state
+vedika.domain.raw.BaseRawDomain --> vedika.domain.types.DataState : state
+vedika.infrastructure.db.mongo.models.CodebaseCleanedMongoDocument --> vedika.domain.types.DataState : state
+vedika.infrastructure.db.mongo.models.CodebaseRawMongoDocument --> vedika.domain.types.DataState : state
+vedika.settings.CategoryRouteConfig --> vedika.settings.StateRouteConfig : raw
+vedika.settings.CategoryRouteConfig --> vedika.settings.StateRouteConfig : cleaned
+vedika.settings.StorageRouteConfig --> vedika.settings.StateRouteConfig : users
+vedika.settings.Settings --> vedika.settings.StorageRouteConfig : storage_routes
+@enduml

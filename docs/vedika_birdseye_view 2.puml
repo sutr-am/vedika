@@ -1,0 +1,134 @@
+@startuml vedika_high_level_architecture
+'!theme blueprint
+'skinparam linetype ortho
+'skinparam shadowing false
+'skinparam nodesep 60
+'skinparam ranksep 60
+'skinparam packageBackgroundColor #F8FBFC
+
+!pragma layout smetana
+'allowmixing
+skinparam linetype polyline
+'skinparam packageTitleAlignment center
+'skinparam ArrowMessageAlignment center
+'skinparam ArrowFontName Arial
+
+' ==============================================================================
+' GLOBAL LAYOUT & SPACING
+' ==============================================================================
+skinparam nodesep 20
+skinparam ranksep 20
+
+<style>
+package {
+    Padding 8
+}
+class {
+    Padding 8
+}
+interface {
+    Padding 8
+}
+package<<System>> {
+    LineStyle 2
+    LineColor #000
+    BackgroundColor transparent
+    Margin 20
+}
+package {
+    Padding 8
+    LineColor #000
+}
+arrow {
+    LineThickness 2
+    LineColor #000
+    FontColor #000
+    FontSize 12
+}
+</style>
+
+' ==============================================================================
+' ICON MACROS
+' ==============================================================================
+!$ICON_CONFIG = "<&cog> "
+!$ICON_ORCH   = "<&layers> "
+!$ICON_APP    = "<color:red><&bug></color> "
+!$ICON_DOMAIN = "<color:green><&star></color> "
+!$ICON_INFRA  = "<&box> "
+
+' ==============================================================================
+' ARROW MACROS (BOLD & STYLED)
+' ==============================================================================
+!$USE = ".[#red,thickness=2].>"
+!$FLOW = "-[bold]->"
+!$EXTENDS = "-[bold]-|>"
+!$HEAVY_FLOW = "-[thickness=3]->"
+!$IMPLEMENTS = ".[bold].|>"
+!$COMPOSES = "*-[bold]->"
+!$AGGREGATES_RED = "o-[#red,bold]->"
+!$IMPLEMENTS_RED = ".[#red,bold].|>"
+!$EXTENDS_BLUE_AGG = "o-[#blue,bold]-|>"
+!$EXTENDS_RED_COMP = "*-[#red,bold]-|>"
+
+
+actor "End User" as User
+cloud "External Data Sources\n(GitHub, Substack, LinkedIn)" as External
+
+package "Control Plane" {
+    node "ZenML Orchestrator" as ZenML #line:2980B9;text:2980B9
+}
+
+package "Data Plane (Storage)" {
+    database "MongoDB\n(Raw Data Warehouse)" as Mongo
+    database "Qdrant\n(Vector Database / Feature Store)" as Qdrant
+    database "Hugging Face\n(Model Registry)" as Registry
+}
+
+package "ETL Data Collection Pipeline" {
+    component "Crawler Service\n(Domain Dispatcher)" as Crawlers
+}
+
+package "Feature Pipeline (RAG Ingestion)" {
+    component "Cleaning Handlers" as Clean
+    component "Chunking & Embedding" as Embed
+}
+
+package "Training Pipeline" {
+    component "LLM Fine-Tuning\n(Ray Train / GPU Node)" as Train
+}
+
+package "Inference Pipeline (RAG)" {
+    component "REST API (FastAPI)" as API
+    component "Retrieval Client" as Retrieval
+    component "LLM Serving Engine\n(Ray Serve / vLLM)" as Serve
+}
+
+' Data Collection Flow
+External $FLOW Crawlers : Scrape Raw HTML/Code
+Crawlers $FLOW Mongo : Store Raw Documents
+
+' Feature Engineering Flow
+Mongo $FLOW Clean : Batch Read
+Clean $FLOW Embed : Normalize Data
+Embed $FLOW Qdrant : Upsert Vectors & Metadata
+
+' Training Flow
+Qdrant $FLOW Train : Fetch Instruction Datasets
+Train $FLOW Registry : Push Fine-Tuned Weights
+
+' Inference Flow
+User $FLOW API : Submit Prompt
+API $FLOW Retrieval : Query Context
+Retrieval $FLOW Qdrant : Vector Search
+Qdrant $FLOW Retrieval : Return Top-K Chunks
+API $FLOW Serve : Augmented Prompt (Query + Context)
+Registry $FLOW Serve : Load Model Weights
+Serve $FLOW API : Stream Response
+API $FLOW User : Generated Output
+
+' Orchestration Triggers
+ZenML $USE Crawlers : Trigger Schedule
+ZenML .[#2980B9,thickness=2].> Clean : Trigger Pipeline
+ZenML .[#2980B9,thickness=2].> Train : Trigger Experiment
+
+@enduml

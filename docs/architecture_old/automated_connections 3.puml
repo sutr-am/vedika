@@ -1,0 +1,52 @@
+@startuml
+'!theme blueprint
+skinparam shadowing false
+hide empty members
+skinparam dpi 600
+
+class BaseCleanedDomain {
+    + id : UUID
+    + title : str
+    + content : str
+    + platform : str
+    + source_url : HttpUrl
+    + user_id : UUID
+    + category : DataCategory
+    + state : DataState
+    + data : Any
+}
+
+
+class CodebaseRawDomain {
+    + id : UUID
+    + title : str
+    + content : str
+    + platform : str
+    + source_url : HttpUrl
+    + user_id : UUID
+    + category : DataCategory
+    + state : DataState
+    + data : Any
+}
+
+
+class CleaningService {
+}
+
+
+class BaseRawDomain {
+    + id : UUID
+    + title : str
+    + content : str
+    + platform : str
+    + source_url : HttpUrl
+    + user_id : UUID
+    + category : DataCategory
+    + state : DataState
+    + data : Any
+}
+
+CleaningService -[#8E44AD]-> BaseCleanedDomain : returns
+CleaningService .[#1ABC9C].> BaseRawDomain : uses (data)
+BaseRawDomain <|-[#3498DB]- CodebaseRawDomain : inherits
+@enduml

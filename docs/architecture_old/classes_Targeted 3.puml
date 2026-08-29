@@ -1,0 +1,36 @@
+@startuml classes_Targeted
+set namespaceSeparator none
+class "BaseCleanedDomain" as vedika.domain.cleaned.BaseCleanedDomain {
+  category : DataCategory
+  content : str
+  id : UUID
+  platform : str
+  source_url : HttpUrl
+  state : DataState
+  title : str
+  user_id : UUID
+  word_count : int
+}
+class "BaseRawDomain" as vedika.domain.raw.BaseRawDomain {
+  category : DataCategory
+  content : str
+  id : Optional[UUID]
+  platform : str
+  source_url : HttpUrl
+  state : DataState
+  title : str
+  user_id : UUID
+  word_count : int
+}
+class "CleaningService" as vedika.application.services.cleaning_service.CleaningService {
+  clean(data: BaseRawDomain) -> BaseCleanedDomain
+}
+class "CodebaseCleanedDomain" as vedika.domain.cleaned.CodebaseCleanedDomain {
+  category : DataCategory
+}
+class "CodebaseRawDomain" as vedika.domain.raw.CodebaseRawDomain {
+  category : DataCategory
+}
+vedika.domain.cleaned.CodebaseCleanedDomain --|> vedika.domain.cleaned.BaseCleanedDomain
+vedika.domain.raw.CodebaseRawDomain --|> vedika.domain.raw.BaseRawDomain
+@enduml

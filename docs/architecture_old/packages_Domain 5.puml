@@ -1,0 +1,16 @@
+@startuml packages_Domain
+set namespaceSeparator none
+package "vedika.domain" as vedika.domain {
+}
+package "vedika.domain.cleaned" as vedika.domain.cleaned {
+}
+package "vedika.domain.raw" as vedika.domain.raw {
+}
+package "vedika.domain.types" as vedika.domain.types {
+}
+package "vedika.domain.users" as vedika.domain.users {
+}
+vedika.domain.cleaned --> vedika.domain.types
+vedika.domain.raw --> vedika.domain.types
+vedika.domain.users --> vedika.domain.types
+@enduml
