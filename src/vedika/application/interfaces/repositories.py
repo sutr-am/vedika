@@ -19,35 +19,33 @@ class BaseUserRepository(Generic[UserT], ABC):
         pass
 
 
-class BaseRawRepository(Generic[RawT], ABC):
+class BaseRepository(ABC):
+    pass
+
+
+class BaseRawRepository(Generic[RawT], BaseRepository):
     @abstractmethod
     def exists_by_url(self, url: str) -> bool:
-        """Check if a document is already stored without fetching the full payload."""
         pass
 
     @abstractmethod
     def save(self, document: RawT) -> None:
-        """Saves a document to the underlying storage"""
         pass
 
     @abstractmethod
     def get_all(self) -> list[RawT]:
-        """Fetches all documents from repository"""
         pass
 
 
-class BaseCleanedRepository(Generic[CleanT], ABC):
+class BaseCleanedRepository(Generic[CleanT], BaseRepository):
     @abstractmethod
     def exists_by_id(self, document_id: UUID) -> bool:
-        """Checks if a cleaned document already exists by its original **document_id**"""
         pass
 
     @abstractmethod
     def save(self, document: CleanT) -> None:
-        """Saves a cleaned document to its storage"""
         pass
 
     @abstractmethod
     def get_by_id(self, document_id: UUID) -> CleanT | None:
-        """Fetches a cleaned domain document by its ID"""
         pass

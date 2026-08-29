@@ -7,8 +7,6 @@ from vedika.domain.types import DataCategory, DataState
 
 
 class BaseRawDomain(BaseModel):
-    """Abstract base domain entity for all text-based content"""
-
     id: UUID = Field(default_factory=uuid4)
     title: str
     content: str

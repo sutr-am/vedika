@@ -8,6 +8,8 @@ from loguru import logger
 from omegaconf import OmegaConf
 from pydantic import BaseModel
 
+from vedika.domain.types import DataCategory, DataState
+
 # 1. Load environment variables from .env file FIRST
 load_dotenv()
 
@@ -36,30 +38,15 @@ class StateRouteConfig(BaseModel):
     target: str
 
 
-class CategoryRouteConfig(BaseModel):
-    raw: StateRouteConfig
-    cleaned: StateRouteConfig
-
-
 class StorageRouteConfig(BaseModel):
     users: StateRouteConfig
-    categories: dict[str, CategoryRouteConfig]
-
-    def get_route(self, category_name: str, state: str) -> StateRouteConfig | None:
-        category_config = self.categories.get(category_name)
-        if not category_config:
-            raise ValueError(f"Category '{category_name}' not found in storage_routes.")
-
-        # Safely fetch the state (raw, cleaned, etc.)
-        state_config = getattr(category_config, state, None)
-        if not state_config:
-            raise ValueError(f"State '{state}' is missing for category '{category_name}'.")
-        return state_config
+    categories: dict[DataCategory, dict[DataState, StateRouteConfig]]
 
 
 class Settings(BaseModel):
     connections: dict[str, ConnectionConfig]
     storage_routes: StorageRouteConfig
+    github_token: str | None = None
 
     @classmethod
     def load_settings(cls, config_name: str = "base.yaml") -> Self:
@@ -86,5 +73,49 @@ class Settings(BaseModel):
         return cls(**dict_cfg)
 
 
-# Singleton Module Instance
-settings = Settings.load_settings()
+def get_settings() -> Settings:
+    return Settings.load_settings()
+
+
+###################################################################
+##### OLD code ########
+# !!! BUG !!! Singleton Module Instance
+# settings = Settings.load_settings()x
+
+
+# class CategoryRouteConfig(BaseModel):
+#     # users: StateRouteConfig
+#     # categories: dict[str, dict[DataState, StateRouteConfig]]
+#     raw: StateRouteConfig
+#     cleaned: StateRouteConfig
+
+
+# class GithubCredentials(BaseModel):
+#     token: str | None = None
+
+
+# class MediumCredentials(BaseModel):
+#     username: str
+#     password: str
+
+
+# class RedditCredentials(BaseModel):
+#     client_id: str
+#     client_secret: str
+#     user_agent: str
+
+
+# class StorageRouteConfig(BaseModel):
+#     users: StateRouteConfig
+#     categories: dict[str, CategoryRouteConfig]
+
+#     def get_route(self, category_name: str, state: str) -> StateRouteConfig | None:
+#         category_config = self.categories.get(category_name)
+#         if not category_config:
+#             raise ValueError(f"Category '{category_name}' not found in storage_routes.")
+
+#         # Safely fetch the state (raw, cleaned, etc.)
+#         state_config = getattr(category_config, state, None)
+#         if not state_config:
+#             raise ValueError(f"State '{state}' is missing for category '{category_name}'.")
+#         return state_config

@@ -1,3 +1,5 @@
+github_token: ${oc.env:GITHUB_TOKEN}
+
 connections:
     primary_mongo:
         driver: mongo

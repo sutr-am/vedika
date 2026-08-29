@@ -1,7 +1,5 @@
 # src/vedika/domain/cleaned.py
-"""Loads the document after removing the noise from the document"""
 
-from abc import ABC
 from uuid import UUID
 
 from pydantic import BaseModel, HttpUrl
@@ -9,9 +7,7 @@ from pydantic import BaseModel, HttpUrl
 from vedika.domain.types import DataCategory, DataState
 
 
-class BaseCleanedDomain(BaseModel, ABC):
-    """Abstract domain entity for a cleaned, full-length document"""
-
+class BaseCleanedDomain(BaseModel):
     id: UUID
     title: str
     content: str
@@ -27,6 +23,4 @@ class BaseCleanedDomain(BaseModel, ABC):
 
 
 class CodebaseCleanedDomain(BaseCleanedDomain):
-    """Cleaned state specific to a codebase"""
-
     category: DataCategory = DataCategory.CODEBASES

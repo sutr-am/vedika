@@ -10,13 +10,14 @@ name = "vedika"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "langchain-text-splitters>=1.1.2",
     "loguru>=0.7.3",
     "omegaconf>=2.3.1",
     "pydantic>=2.12.5",
     "pygithub==2.10.0",
+    "pylint>=4.0.7",
     "pymongo>=4.17.0",
     "pytest>=9.1.1",
     "pytest-mock>=3.15.1",
@@ -28,10 +29,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "plantuml>=0.3.0",
+    "ipykernel>=7.3.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "rich-cli>=1.8.1",
     "ruff>=0.16.0",
+    "pdgen>=0.3.2",
 ]
 
 [tool.ruff]
