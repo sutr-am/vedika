@@ -22,6 +22,7 @@ class CrawlDomain(BaseModel):
     source_id: UUID
     requested_url: HttpUrl
     canonical_url: HttpUrl
+    selected_ref: str | None = None
     revision: str
     crawler_version: str
     status: CrawlStatus = CrawlStatus.PENDING

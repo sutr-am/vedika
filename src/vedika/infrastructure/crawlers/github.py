@@ -58,10 +58,16 @@ class GithubCrawler(BaseCrawler):
         repo_path = urlparse(canonical_url).path.strip("/")
         return repo_path, repo_path.split("/")[-1]
 
-    def get_revision(self, canonical_url: str) -> str:
+    def get_ref(self, url: str) -> str | None:
+        parts = [part for part in urlparse(url).path.split("/") if part]
+        if len(parts) > 3 and parts[2] == "tree":
+            return "/".join(parts[3:])
+        return None
+
+    def get_revision(self, canonical_url: str, ref: str | None) -> str:
         repo_path, _ = self._parse_repo_url(canonical_url)
         repo = self.gh.get_repo(repo_path)
-        return repo.get_branch(repo.default_branch).commit.sha
+        return repo.get_branch(ref or repo.default_branch).commit.sha
 
     def _should_ignore(self, file_path: str) -> bool:
         return any(file_path.endswith(i) or f"/{i}/" in file_path for i in self._ignore)
@@ -112,7 +118,12 @@ class GithubCrawler(BaseCrawler):
         return documents
 
     def extract(
-        self, canonical_url: str, user_id: UUID, source_id: UUID, crawl_id: UUID
+        self,
+        canonical_url: str,
+        ref: str | None,
+        user_id: UUID,
+        source_id: UUID,
+        crawl_id: UUID,
     ) -> list[CodebaseRawDomain]:
         """
         Orchestrates the crawling process and saves the resulting CodebaseDocument
@@ -123,7 +134,7 @@ class GithubCrawler(BaseCrawler):
         try:
             # Get repo details
             repo = self.gh.get_repo(repo_path)
-            tree = repo.get_git_tree(sha=repo.default_branch, recursive=True).tree
+            tree = repo.get_git_tree(sha=ref or repo.default_branch, recursive=True).tree
 
             return self._build_documents(
                 repo=repo,

@@ -4,5 +4,6 @@ parameters:
     user_last_name: "one"
     links:
         - "https://github.com/imflash217/portfolio"
-        - "https://github.com/sutr-am/vedika"
+        # - "https://github.com/sutr-am/vedika"
+        - https://github.com/sutr-am/vedika/tree/feature-engineering
         - "https://github.com/imflash217/TensorTonic-Solutions"

@@ -39,7 +39,8 @@ class CrawlerService:
                 provider=crawler.provider,
                 canonical_url=canonical_url,
             )
-            revision = crawler.get_revision(canonical_url)
+            selected_ref = crawler.get_ref(url)
+            revision = crawler.get_revision(canonical_url, selected_ref)
 
             existing_crawl = crawl_repository.get_successful(
                 source_id=source.id, revision=revision, crawler_version=crawler.version
@@ -52,6 +53,7 @@ class CrawlerService:
                 "source_id": source.id,
                 "requested_url": url,
                 "canonical_url": canonical_url,
+                "selected_ref": selected_ref,
                 "revision": revision,
                 "crawler_version": crawler.version,
                 "status": CrawlStatus.RUNNING,
@@ -62,6 +64,7 @@ class CrawlerService:
             crawl_id = crawl.id
             documents = crawler.extract(
                 canonical_url=canonical_url,
+                ref=selected_ref,
                 user_id=user_id,
                 source_id=source.id,
                 crawl_id=crawl.id,

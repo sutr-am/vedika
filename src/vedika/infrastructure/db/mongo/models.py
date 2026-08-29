@@ -69,6 +69,7 @@ class CrawlMongoDocument(BaseMongoDocument):
     source_id: UUID4
     requested_url: HttpUrl
     canonical_url: HttpUrl
+    selected_ref: str | None = None
     revision: str
     crawler_version: str
     status: str

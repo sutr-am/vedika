@@ -178,6 +178,7 @@ class CrawlMongoRepository:
             source_id=db_doc["source_id"],
             requested_url=db_doc["requested_url"],
             canonical_url=db_doc["canonical_url"],
+            selected_ref=db_doc.get("selected_ref"),
             revision=db_doc["revision"],
             crawler_version=db_doc["crawler_version"],
             status=db_doc["status"],

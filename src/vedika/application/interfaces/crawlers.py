@@ -24,13 +24,18 @@ class BaseCrawler(ABC):
         pass
 
     @abstractmethod
-    def get_revision(self, canonical_url: str) -> str:
+    def get_ref(self, url: str) -> str | None:
+        pass
+
+    @abstractmethod
+    def get_revision(self, canonical_url: str, ref: str | None) -> str:
         pass
 
     @abstractmethod
     def extract(
         self,
         canonical_url: str,
+        ref: str | None,
         user_id: UUID,
         source_id: UUID,
         crawl_id: UUID,

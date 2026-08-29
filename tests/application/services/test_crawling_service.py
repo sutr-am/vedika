@@ -32,6 +32,7 @@ def test_crawl_persists_file_documents_with_source_and_crawl_lineage() -> None:
     crawler.provider = "github"
     crawler.version = "1"
     crawler.canonicalize_url.return_value = "https://github.com/acme/widgets"
+    crawler.get_ref.return_value = None
     crawler.get_revision.return_value = "commit-sha"
     document = build_document(user_id, source_id, crawl_id)
     crawler.extract.return_value = [document]
@@ -68,6 +69,7 @@ def test_crawl_persists_file_documents_with_source_and_crawl_lineage() -> None:
     assert status is CrawlStatus.SUCCESS
     crawler.extract.assert_called_once_with(
         canonical_url="https://github.com/acme/widgets",
+        ref=None,
         user_id=user_id,
         source_id=source_id,
         crawl_id=crawl_id,
@@ -90,6 +92,7 @@ def test_crawl_skips_existing_successful_source_revision() -> None:
     crawler.provider = "github"
     crawler.version = "1"
     crawler.canonicalize_url.return_value = "https://github.com/acme/widgets"
+    crawler.get_ref.return_value = None
     crawler.get_revision.return_value = "commit-sha"
     router = MagicMock()
     router.get_crawler.return_value = crawler
