@@ -4,12 +4,15 @@ from typing import Any, cast
 from vedika.application.interfaces.providers import BaseRepositoryProvider
 from vedika.application.interfaces.repositories import (
     BaseCleanedRepository,
+    BaseCrawlRepository,
     BaseRawRepository,
     BaseRepository,
+    BaseSourceRepository,
     BaseUserRepository,
 )
 from vedika.domain.types import DataCategory, DataState
 from vedika.infrastructure.db.mongo.connection import MongoDatabaseConnector
+from vedika.infrastructure.db.mongo.repositories import CrawlMongoRepository, SourceMongoRepository
 from vedika.infrastructure.db.registry import REPOSITORY_REGISTRY
 from vedika.settings import Settings
 
@@ -24,6 +27,8 @@ class RepositoryProvider(BaseRepositoryProvider):
         self._mongo_connector: MongoDatabaseConnector | None = mongo_connector
         # self._qdrant_connector: QdrantDatabaseConnector | None = qdrant_connector
         self._user_repository: BaseUserRepository | None = None
+        self._source_repository: BaseSourceRepository | None = None
+        self._crawl_repository: BaseCrawlRepository | None = None
         self._repositories: dict[tuple[DataCategory, DataState], BaseRepository] = {}
         self._build_repositories(settings=settings)
 
@@ -31,6 +36,16 @@ class RepositoryProvider(BaseRepositoryProvider):
         if self._user_repository is None:
             raise ValueError("No user repository configured.")
         return self._user_repository
+
+    def get_source_repository(self) -> BaseSourceRepository:
+        if self._source_repository is None:
+            raise ValueError("No source repository configured.")
+        return self._source_repository
+
+    def get_crawl_repository(self) -> BaseCrawlRepository:
+        if self._crawl_repository is None:
+            raise ValueError("No crawl repository configured.")
+        return self._crawl_repository
 
     def get_repository(self, category: DataCategory, state: DataState) -> BaseRepository:
         try:
@@ -90,6 +105,16 @@ class RepositoryProvider(BaseRepositoryProvider):
             connection=user_route.connection,
             target=user_route.target,
             settings=settings,
+        )
+        self._source_repository = self._build_mongo_repository(
+            repository_class=SourceMongoRepository,
+            connection=settings.storage_routes.sources.connection,
+            target=settings.storage_routes.sources.target,
+        )
+        self._crawl_repository = self._build_mongo_repository(
+            repository_class=CrawlMongoRepository,
+            connection=settings.storage_routes.crawls.connection,
+            target=settings.storage_routes.crawls.target,
         )
 
         for category_name, state_routes in settings.storage_routes.categories.items():

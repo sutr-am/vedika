@@ -14,6 +14,12 @@ storage_routes:
     users:
         connection: primary_mongo
         target: users
+    sources:
+        connection: primary_mongo
+        target: sources
+    crawls:
+        connection: primary_mongo
+        target: crawls
     categories:
         codebases:
             raw:

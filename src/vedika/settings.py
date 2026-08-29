@@ -81,6 +81,8 @@ class StateRouteConfig(BaseModel):
 
 class StorageRouteConfig(BaseModel):
     users: StateRouteConfig
+    sources: StateRouteConfig
+    crawls: StateRouteConfig
     categories: dict[DataCategory, dict[DataState, StateRouteConfig]]
 
     @field_validator("categories")
@@ -94,6 +96,11 @@ class StorageRouteConfig(BaseModel):
         # Validate user route
         if self.users.connection not in all_connections:
             raise ValueError(f"User route references unknown connection: {self.users.connection}")
+        for route_name, route in (("source", self.sources), ("crawl", self.crawls)):
+            if route.connection not in all_connections:
+                raise ValueError(
+                    f"{route_name} route references unknown connection: {route.connection}"
+                )
 
         # Validate category routes
         for category, states in self.categories.items():

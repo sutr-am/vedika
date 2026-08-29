@@ -8,11 +8,16 @@ from vedika.domain.types import DataCategory, DataState
 
 class BaseRawDomain(BaseModel):
     id: UUID = Field(default_factory=uuid4)
+    source_id: UUID
+    crawl_id: UUID
     title: str
     content: str
     platform: str
     source_url: HttpUrl
     user_id: UUID
+    repository_path: str
+    upstream_file_sha: str
+    content_sha256: str
     category: DataCategory
     state: DataState = DataState.RAW
 

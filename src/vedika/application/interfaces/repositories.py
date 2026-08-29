@@ -5,6 +5,7 @@ from uuid import UUID
 
 from vedika.domain.cleaned import BaseCleanedDomain
 from vedika.domain.raw import BaseRawDomain
+from vedika.domain.sources import CrawlDomain, SourceDomain
 from vedika.domain.users import UserDomain
 
 # A generic type that is of DocumentDomain or its subclass
@@ -33,7 +34,37 @@ class BaseRawRepository(Generic[RawT], BaseRepository):
         pass
 
     @abstractmethod
+    def replace_crawl_documents(self, crawl_id: UUID, documents: list[RawT]) -> None:
+        pass
+
+    @abstractmethod
     def get_all(self) -> list[RawT]:
+        pass
+
+
+class BaseSourceRepository(ABC):
+    @abstractmethod
+    def get_or_create(self, user_id: UUID, provider: str, canonical_url: str) -> SourceDomain:
+        pass
+
+
+class BaseCrawlRepository(ABC):
+    @abstractmethod
+    def get_successful(
+        self, source_id: UUID, revision: str, crawler_version: str
+    ) -> CrawlDomain | None:
+        pass
+
+    @abstractmethod
+    def get_or_create(self, crawl: CrawlDomain) -> CrawlDomain:
+        pass
+
+    @abstractmethod
+    def mark_succeeded(self, crawl_id: UUID, document_count: int) -> None:
+        pass
+
+    @abstractmethod
+    def mark_failed(self, crawl_id: UUID, error_message: str) -> None:
         pass
 
 

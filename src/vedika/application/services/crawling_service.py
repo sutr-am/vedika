@@ -1,11 +1,13 @@
 # src/vedika/application/services/crawling_service.py
 
+from uuid import UUID
+
 from loguru import logger
-from pydantic import UUID4
 
 from vedika.application.interfaces.crawlers import BaseCrawlerRouter
 from vedika.application.interfaces.providers import BaseRepositoryProvider
-from vedika.application.interfaces.repositories import BaseRawRepository
+from vedika.application.interfaces.repositories import BaseCrawlRepository, BaseRawRepository
+from vedika.domain.sources import CrawlDomain
 from vedika.domain.types import CrawlStatus
 
 
@@ -19,22 +21,56 @@ class CrawlerService:
     def crawl_and_save(
         self,
         url: str,
-        user_id: UUID4,
+        user_id: UUID,
         force_recrawl: bool = False,
     ) -> CrawlStatus:
+        crawl_repository: BaseCrawlRepository | None = None
+        crawl_id: UUID | None = None
         try:
             crawler = self._crawler_router.get_crawler(url=url)
-            repository: BaseRawRepository = self._repository_provider.get_raw_repository(
+            raw_repository: BaseRawRepository = self._repository_provider.get_raw_repository(
                 category=crawler.category
             )
+            source_repository = self._repository_provider.get_source_repository()
+            crawl_repository = self._repository_provider.get_crawl_repository()
+            canonical_url = crawler.canonicalize_url(url)
+            source = source_repository.get_or_create(
+                user_id=user_id,
+                provider=crawler.provider,
+                canonical_url=canonical_url,
+            )
+            revision = crawler.get_revision(canonical_url)
 
-            if not force_recrawl and repository.exists_by_url(url=url):
-                logger.info(f"Skipping {url}. Already exists")
+            existing_crawl = crawl_repository.get_successful(
+                source_id=source.id, revision=revision, crawler_version=crawler.version
+            )
+            if existing_crawl and not force_recrawl:
+                logger.info(f"Skipping {canonical_url} at revision {revision}. Already crawled")
                 return CrawlStatus.SKIPPED
 
-            data = crawler.extract(url=url, user_id=user_id)
-            repository.save(data)
+            crawl_data = {
+                "source_id": source.id,
+                "requested_url": url,
+                "canonical_url": canonical_url,
+                "revision": revision,
+                "crawler_version": crawler.version,
+                "status": CrawlStatus.RUNNING,
+            }
+            if existing_crawl:
+                crawl_data["id"] = existing_crawl.id
+            crawl = crawl_repository.get_or_create(CrawlDomain(**crawl_data))
+            crawl_id = crawl.id
+            documents = crawler.extract(
+                canonical_url=canonical_url,
+                user_id=user_id,
+                source_id=source.id,
+                crawl_id=crawl.id,
+            )
+            raw_repository.replace_crawl_documents(crawl_id=crawl.id, documents=documents)
+            crawl_repository.mark_succeeded(crawl_id=crawl.id, document_count=len(documents))
             return CrawlStatus.SUCCESS
         except Exception as e:
             logger.exception(f"Error while crawling {url=}: \n{e}")
+            if crawl_repository and crawl_id:
+                crawl_repository.mark_failed(crawl_id=crawl_id, error_message=str(e))
             return CrawlStatus.FAILED

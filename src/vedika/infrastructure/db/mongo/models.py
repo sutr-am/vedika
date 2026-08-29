@@ -14,7 +14,7 @@ MongoDocT = TypeVar("MongoDocT", bound="BaseMongoDocument")
 
 
 class BaseMongoDocument(BaseModel, Generic[MongoDocT], ABC):
-    id: UUID4 = Field(default_factory=uuid.uuid4)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -59,12 +59,36 @@ class UserMongoDocument(BaseMongoDocument):
         return f"{self.first_name} {self.last_name}"
 
 
+class SourceMongoDocument(BaseMongoDocument):
+    user_id: UUID4
+    provider: str
+    canonical_url: HttpUrl
+
+
+class CrawlMongoDocument(BaseMongoDocument):
+    source_id: UUID4
+    requested_url: HttpUrl
+    canonical_url: HttpUrl
+    revision: str
+    crawler_version: str
+    status: str
+    started_at: datetime
+    completed_at: datetime | None = None
+    document_count: int = 0
+    error_message: str | None = None
+
+
 class CodebaseRawMongoDocument(BaseMongoDocument):
+    source_id: UUID4
+    crawl_id: UUID4
     title: str
     content: str
     platform: str
     source_url: HttpUrl
     user_id: UUID4
+    repository_path: str
+    upstream_file_sha: str
+    content_sha256: str
     category: DataCategory = DataCategory.CODEBASES
     state: DataState = DataState.RAW
 
