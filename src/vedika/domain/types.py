@@ -5,15 +5,15 @@ from pydantic import BaseModel, Field, computed_field
 
 
 class DataCategory(StrEnum):
-    USERS = "users"
-    CODEBASES = "codebases"
+    USERS = "users"  # stores details about user data (eg. UserDomain)
+    CODEBASES = "codebases"  # stores data from code repos like github, bitbucket etc
     # POSTS = "posts"
     # ARTICLES = "articles"
 
 
 class DataState(StrEnum):
     RAW = "raw"
-    CLEANED = "cleaned"
+    # CLEANED = "cleaned"
     # CHUNKED = "chunked"
     # EMBEDDED = "embedded"
 
@@ -58,13 +58,13 @@ class CrawlHostMetadata(BaseModel):
 
 
 class UserQueryMetadata(BaseModel):
-    user_full_name: str
+    user_full_name: str  # user.full_name (full-name of the user)
 
 
 class RetrievedUserMetadata(BaseModel):
-    user_id: str
-    first_name: str
-    last_name: str
+    user_id: str  # the user.id
+    first_name: str  # user.first_name
+    last_name: str  # user.last_name
 
 
 class UserMetadata(BaseModel):

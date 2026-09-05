@@ -94,11 +94,11 @@ class CodebaseRawMongoDocument(BaseMongoDocument):
     state: DataState = DataState.RAW
 
 
-class CodebaseCleanedMongoDocument(BaseMongoDocument):
-    title: str
-    content: str
-    platform: str
-    source_url: HttpUrl
-    user_id: UUID4
-    category: DataCategory = DataCategory.CODEBASES
-    state: DataState = DataState.CLEANED
+# class CodebaseCleanedMongoDocument(BaseMongoDocument):
+#     title: str
+#     content: str
+#     platform: str
+#     source_url: HttpUrl
+#     user_id: UUID4
+#     category: DataCategory = DataCategory.CODEBASES
+#     state: DataState = DataState.CLEANED

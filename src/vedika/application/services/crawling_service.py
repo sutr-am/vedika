@@ -42,25 +42,32 @@ class CrawlerService:
             selected_ref = crawler.get_ref(url)
             revision = crawler.get_revision(canonical_url, selected_ref)
 
-            existing_crawl = crawl_repository.get_successful(
+            existing_crawl = crawl_repository.get_successful_crawl(
                 source_id=source.id, revision=revision, crawler_version=crawler.version
             )
-            if existing_crawl and not force_recrawl:
+            crawl_data_exists = existing_crawl is not None and raw_repository.has_crawl_documents(
+                crawl_id=existing_crawl.id, expected_count=existing_crawl.document_count
+            )
+
+            if crawl_data_exists and not force_recrawl:
                 logger.info(f"Skipping {canonical_url} at revision {revision}. Already crawled")
                 return CrawlStatus.SKIPPED
 
-            crawl_data = {
-                "source_id": source.id,
-                "requested_url": url,
-                "canonical_url": canonical_url,
-                "selected_ref": selected_ref,
-                "revision": revision,
-                "crawler_version": crawler.version,
-                "status": CrawlStatus.RUNNING,
-            }
             if existing_crawl:
-                crawl_data["id"] = existing_crawl.id
-            crawl = crawl_repository.get_or_create(CrawlDomain(**crawl_data))
+                crawl_repository.mark_running(existing_crawl.id)
+                crawl = existing_crawl
+            else:
+                crawl_data = {
+                    "source_id": source.id,
+                    "requested_url": url,
+                    "canonical_url": canonical_url,
+                    "selected_ref": selected_ref,
+                    "revision": revision,
+                    "crawler_version": crawler.version,
+                    "status": CrawlStatus.RUNNING,
+                }
+                crawl = crawl_repository.get_or_create(CrawlDomain(**crawl_data))
+
             crawl_id = crawl.id
             documents = crawler.extract(
                 canonical_url=canonical_url,

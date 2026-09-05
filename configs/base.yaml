@@ -23,8 +23,8 @@ storage_routes:
     categories:
         codebases:
             raw:
-                connection: primary_mongo
-                target: codebases_raw
-            cleaned:
                 connection: secondary_mongo
-                target: codebases_cleaned
+                target: codebases_raw
+            # cleaned:
+            #     connection: secondary_mongo
+            #     target: codebases_cleaned

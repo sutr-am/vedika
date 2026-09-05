@@ -1,12 +1,13 @@
 # src/vedika/infrastructure/crawlers/github.py
-import base64
 import hashlib
+import subprocess
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from urllib.parse import urlparse
 from uuid import UUID, uuid5
 
 from github import Auth, Github
 from github.GithubException import GithubException
-from github.Repository import Repository
 from loguru import logger
 from pydantic import HttpUrl
 from tqdm import tqdm
@@ -23,7 +24,7 @@ class GithubCrawler(BaseCrawler):
 
     def __init__(
         self,
-        github_token: str | None,
+        token: str | None,
         ignore=(
             ".git",
             ".toml",
@@ -37,8 +38,8 @@ class GithubCrawler(BaseCrawler):
     ) -> None:
         # super().__init__(repository)
         self._ignore = ignore
-        if github_token:
-            auth = Auth.Token(token=github_token)
+        if token:
+            auth = Auth.Token(token=token)
             self.gh = Github(auth=auth)
         else:
             self.gh = Github()
@@ -70,60 +71,89 @@ class GithubCrawler(BaseCrawler):
         return repo.get_branch(ref or repo.default_branch).commit.sha
 
     def _should_ignore(self, file_path: str) -> bool:
-        return any(file_path.endswith(i) or f"/{i}/" in file_path for i in self._ignore)
+        path_parts = file_path.split("/")
+        return any(file_path.endswith(ignore) or ignore in path_parts for ignore in self._ignore)
 
     @staticmethod
-    def _fetch_file_content(repo: Repository, file_path: str):
-        try:
-            file_content_encoded = repo.get_contents(file_path)
-            # If the API return a list, then it's a dictionary; so we can skip it as it's not code
-            if isinstance(file_content_encoded, list):
-                return None
-            file_content_decoded = base64.b64decode(file_content_encoded.content).decode("utf-8")
-            return file_content_decoded
-        except (GithubException, UnicodeDecodeError) as e:
-            logger.warning(f"Skipped file {file_path} due to error: {e}")
-            return None
+    def _get_blob_shas(repository_path: Path) -> dict[str, str]:
+        result = subprocess.run(
+            ["git", "-C", str(repository_path), "ls-tree", "-r", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        blob_shas = {}
+        for line in result.stdout.splitlines():
+            metadata, file_path = line.split("\t", maxsplit=1)
+            blob_shas[file_path] = metadata.split()[2]
+        return blob_shas
 
     def _build_documents(
         self,
-        repo: Repository,
-        tree,
+        repository_path: Path,
+        repository_name: str,
         user_id: UUID,
         source_id: UUID,
         crawl_id: UUID,
         canonical_url: str,
+        blob_shas: dict[str, str],
     ) -> list[CodebaseRawDomain]:
         documents = []
-        for element in tqdm(tree, desc=f"Crawling {repo.name} files"):
-            if element.type == "tree" or self._should_ignore(element.path):
+        files = [path for path in repository_path.rglob("*") if path.is_file()]
+        for file_path in tqdm(files, desc=f"Crawling {repository_name} files"):
+            relative_path = file_path.relative_to(repository_path).as_posix()
+            if self._should_ignore(relative_path):
                 continue
-            file_content = self._fetch_file_content(repo, element.path)
+            try:
+                file_content = file_path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as error:
+                logger.warning(f"Skipped file {relative_path} due to error: {error}")
+                continue
+
             if file_content:
                 documents.append(
                     CodebaseRawDomain(
-                        id=uuid5(crawl_id, element.path),
+                        id=uuid5(crawl_id, relative_path),
                         source_id=source_id,
                         crawl_id=crawl_id,
-                        title=f"github/{repo.full_name}/{element.path}",
+                        title=f"github/{repository_name}/{relative_path}",
                         content=file_content,
                         platform="github",
                         source_url=HttpUrl(canonical_url),
                         user_id=user_id,
-                        repository_path=element.path,
-                        upstream_file_sha=element.sha,
+                        repository_path=relative_path,
+                        upstream_file_sha=blob_shas.get(relative_path, ""),
                         content_sha256=hashlib.sha256(file_content.encode()).hexdigest(),
                     )
                 )
         return documents
 
+    @staticmethod
+    def _clone_repository(canonical_url: str, ref: str, destination: Path) -> None:
+        try:
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "--depth",
+                    "1",
+                    "--no-tags",
+                    "--single-branch",
+                    "--branch",
+                    ref,
+                    canonical_url,
+                    str(destination),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError as error:
+            details = error.stderr.strip() or error.stdout.strip()
+            raise RuntimeError(f"Unable to clone {canonical_url}: {details}") from error
+
     def extract(
-        self,
-        canonical_url: str,
-        ref: str | None,
-        user_id: UUID,
-        source_id: UUID,
-        crawl_id: UUID,
+        self, canonical_url: str, ref: str | None, user_id: UUID, source_id: UUID, crawl_id: UUID
     ) -> list[CodebaseRawDomain]:
         """
         Orchestrates the crawling process and saves the resulting CodebaseDocument
@@ -132,18 +162,25 @@ class GithubCrawler(BaseCrawler):
 
         repo_path, _ = self._parse_repo_url(canonical_url=canonical_url)
         try:
-            # Get repo details
             repo = self.gh.get_repo(repo_path)
-            tree = repo.get_git_tree(sha=ref or repo.default_branch, recursive=True).tree
-
-            return self._build_documents(
-                repo=repo,
-                tree=tree,
-                user_id=user_id,
-                source_id=source_id,
-                crawl_id=crawl_id,
-                canonical_url=canonical_url,
-            )
+            clone_ref = ref or repo.default_branch
+            with TemporaryDirectory(prefix="vedika-github-") as temporary_directory:
+                checkout_path = Path(temporary_directory) / repo.name
+                self._clone_repository(
+                    canonical_url=canonical_url,
+                    ref=clone_ref,
+                    destination=checkout_path,
+                )
+                blob_shas = self._get_blob_shas(repository_path=checkout_path)
+                return self._build_documents(
+                    repository_path=checkout_path,
+                    repository_name=repo.full_name,
+                    user_id=user_id,
+                    source_id=source_id,
+                    crawl_id=crawl_id,
+                    canonical_url=canonical_url,
+                    blob_shas=blob_shas,
+                )
         except GithubException as e:
             logger.exception(f"Failed to crawl {canonical_url}: {e}")
             raise e

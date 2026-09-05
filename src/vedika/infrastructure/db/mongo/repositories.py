@@ -7,17 +7,18 @@ from pymongo.collection import Collection
 from pymongo.operations import ReplaceOne
 
 from vedika.application.interfaces.repositories import (
-    BaseCleanedRepository,
+    # BaseCleanedRepository,
     BaseRawRepository,
     BaseUserRepository,
 )
-from vedika.domain.cleaned import CodebaseCleanedDomain
+
+# from vedika.domain.cleaned import CodebaseCleanedDomain
 from vedika.domain.raw import CodebaseRawDomain
 from vedika.domain.sources import CrawlDomain, SourceDomain
 from vedika.domain.types import CrawlStatus
 from vedika.domain.users import UserDomain
 from vedika.infrastructure.db.mongo.models import (
-    CodebaseCleanedMongoDocument,
+    # CodebaseCleanedMongoDocument,
     CodebaseRawMongoDocument,
     CrawlMongoDocument,
     SourceMongoDocument,
@@ -33,7 +34,7 @@ class UserMongoRepository(BaseUserRepository[UserDomain]):
             [("first_name", ASCENDING), ("last_name", ASCENDING)], unique=True
         )
 
-    def get_or_create_user(self, first_name: str, last_name: str) -> UserDomain:
+    def get_or_create_user(self, first_name: str, last_name: str) -> UserDomain | None:
         new_user = UserMongoDocument(first_name=first_name, last_name=last_name)
         db_data = self._collection.find_one_and_update(
             {"first_name": first_name, "last_name": last_name},
@@ -43,10 +44,138 @@ class UserMongoRepository(BaseUserRepository[UserDomain]):
         )
 
         # Map back to the pure Domain model
-        return UserDomain(
-            id=db_data.get("_id", db_data.get("id")),
-            first_name=db_data["first_name"],
-            last_name=db_data["last_name"],
+        if db_data:
+            return UserDomain(
+                id=db_data.get("_id", db_data.get("id")),
+                first_name=db_data["first_name"],
+                last_name=db_data["last_name"],
+            )
+        return None
+
+
+class SourceMongoRepository:
+    def __init__(self, client: MongoClient, db_name: str, target: str) -> None:
+        self._collection: Collection = client[db_name][target]
+        self._collection.create_index(
+            [("user_id", ASCENDING), ("provider", ASCENDING), ("canonical_url", ASCENDING)],
+            unique=True,
+        )
+
+    def get_or_create(
+        self, user_id: UUID, provider: str, canonical_url: str
+    ) -> SourceDomain | None:
+        source = SourceMongoDocument(
+            user_id=user_id,
+            provider=provider,
+            canonical_url=canonical_url,
+        )
+        db_doc = self._collection.find_one_and_update(
+            {"user_id": str(user_id), "provider": provider, "canonical_url": canonical_url},
+            {"$setOnInsert": source.to_mongo()},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        if db_doc:
+            return SourceDomain(
+                id=db_doc["_id"],
+                user_id=db_doc["user_id"],
+                provider=db_doc["provider"],
+                canonical_url=db_doc["canonical_url"],
+            )
+        return None
+
+
+class CrawlMongoRepository:
+    def __init__(self, client: MongoClient, db_name: str, target: str) -> None:
+        self._collection: Collection = client[db_name][target]
+        self._collection.create_index(
+            [("source_id", ASCENDING), ("revision", ASCENDING), ("crawler_version", ASCENDING)],
+            unique=True,
+        )
+
+    @staticmethod
+    def _to_domain(db_doc: dict) -> CrawlDomain:
+        return CrawlDomain(
+            id=db_doc["_id"],
+            source_id=db_doc["source_id"],
+            requested_url=db_doc["requested_url"],
+            canonical_url=db_doc["canonical_url"],
+            selected_ref=db_doc.get("selected_ref"),
+            revision=db_doc["revision"],
+            crawler_version=db_doc["crawler_version"],
+            status=db_doc["status"],
+            started_at=db_doc["started_at"],
+            completed_at=db_doc.get("completed_at"),
+            document_count=db_doc.get("document_count", 0),
+            error_message=db_doc.get("error_message"),
+        )
+
+    def get_successful_crawl(
+        self, source_id: UUID, revision: str, crawler_version: str
+    ) -> CrawlDomain | None:
+        db_doc = self._collection.find_one(
+            {
+                "source_id": str(source_id),
+                "revision": revision,
+                "crawler_version": crawler_version,
+                "status": CrawlStatus.SUCCESS.value,
+            }
+        )
+        return self._to_domain(db_doc) if db_doc else None
+
+    def get_or_create(self, crawl: CrawlDomain) -> CrawlDomain:
+        crawl_data = CrawlMongoDocument(**crawl.model_dump(exclude={"id"})).to_mongo()
+        crawl_data.pop("status")
+        crawl_data.pop("error_message")
+        crawl_data.pop("completed_at")
+        db_doc = self._collection.find_one_and_update(
+            {
+                "source_id": str(crawl.source_id),
+                "revision": crawl.revision,
+                "crawler_version": crawl.crawler_version,
+            },
+            {
+                "$setOnInsert": crawl_data,
+                "$set": {
+                    "status": CrawlStatus.RUNNING.value,
+                    "error_message": None,
+                    "completed_at": None,
+                },
+            },
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        return self._to_domain(db_doc)
+
+    def mark_running(self, crawl_id: UUID) -> None:
+        self._collection.update_one(
+            {"_id": str(crawl_id)},
+            {"$set": {"status": CrawlStatus.RUNNING.value}},
+        )
+
+    def mark_succeeded(self, crawl_id: UUID, document_count: int) -> None:
+        self._collection.update_one(
+            {"_id": str(crawl_id)},
+            {
+                "$set": {
+                    "status": CrawlStatus.SUCCESS.value,
+                    "document_count": document_count,
+                    "completed_at": datetime.now(timezone.utc),
+                    "error_message": None,
+                }
+            },
+        )
+
+    def mark_failed(self, crawl_id: UUID, error_message: str) -> None:
+        self._collection.update_one(
+            {"_id": str(crawl_id)},
+            {
+                "$set": {
+                    "status": CrawlStatus.FAILED.value,
+                    "completed_at": datetime.now(timezone.utc),
+                    "error_message": error_message,
+                }
+            },
         )
 
 
@@ -63,8 +192,8 @@ class CodebaseRawMongoRepository(BaseRawRepository[CodebaseRawDomain]):
             [("crawl_id", ASCENDING), ("repository_path", ASCENDING)], unique=True
         )
 
-    def exists_by_url(self, url: str) -> bool:
-        return self._collection.find_one({"source_url": url}) is not None
+    def has_crawl_documents(self, crawl_id: UUID, expected_count: int) -> bool:
+        return self._collection.count_documents({"crawl_id": str(crawl_id)}) == expected_count
 
     def save(self, document: CodebaseRawDomain) -> None:
         db_doc = CodebaseRawMongoDocument(
@@ -135,151 +264,35 @@ class CodebaseRawMongoRepository(BaseRawRepository[CodebaseRawDomain]):
         return domain_docs
 
 
-class SourceMongoRepository:
-    def __init__(self, client: MongoClient, db_name: str, target: str) -> None:
-        self._collection: Collection = client[db_name][target]
-        self._collection.create_index(
-            [("user_id", ASCENDING), ("provider", ASCENDING), ("canonical_url", ASCENDING)],
-            unique=True,
-        )
+# class CodebaseCleanedMongoRepository(BaseCleanedRepository[CodebaseCleanedDomain]):
+#     def __init__(self, client: MongoClient, db_name: str, target: str) -> None:
+#         # 1. Initialize the specific MongoDB collection directly in memory
+#         self._collection: Collection = client[db_name][target]
 
-    def get_or_create(self, user_id: UUID, provider: str, canonical_url: str) -> SourceDomain:
-        source = SourceMongoDocument(
-            user_id=user_id,
-            provider=provider,
-            canonical_url=canonical_url,
-        )
-        db_doc = self._collection.find_one_and_update(
-            {"user_id": str(user_id), "provider": provider, "canonical_url": canonical_url},
-            {"$setOnInsert": source.to_mongo()},
-            upsert=True,
-            return_document=ReturnDocument.AFTER,
-        )
-        return SourceDomain(
-            id=db_doc["_id"],
-            user_id=db_doc["user_id"],
-            provider=db_doc["provider"],
-            canonical_url=db_doc["canonical_url"],
-        )
+#     def exists_by_id(self, document_id: UUID) -> bool:
+#         return self._collection.find_one({"_id": str(document_id)}) is not None
 
+#     def save(self, document: CodebaseCleanedDomain) -> None:
+#         db_doc = CodebaseCleanedMongoDocument(
+#             id=document.id,
+#             title=document.title,
+#             content=document.content,
+#             platform=document.platform,
+#             source_url=document.source_url,
+#             user_id=document.user_id,
+#         )
 
-class CrawlMongoRepository:
-    def __init__(self, client: MongoClient, db_name: str, target: str) -> None:
-        self._collection: Collection = client[db_name][target]
-        self._collection.create_index(
-            [("source_id", ASCENDING), ("revision", ASCENDING), ("crawler_version", ASCENDING)],
-            unique=True,
-        )
+#         self._collection.replace_one({"_id": str(db_doc.id)}, db_doc.to_mongo(), upsert=True)
 
-    @staticmethod
-    def _to_domain(db_doc: dict) -> CrawlDomain:
-        return CrawlDomain(
-            id=db_doc["_id"],
-            source_id=db_doc["source_id"],
-            requested_url=db_doc["requested_url"],
-            canonical_url=db_doc["canonical_url"],
-            selected_ref=db_doc.get("selected_ref"),
-            revision=db_doc["revision"],
-            crawler_version=db_doc["crawler_version"],
-            status=db_doc["status"],
-            started_at=db_doc["started_at"],
-            completed_at=db_doc.get("completed_at"),
-            document_count=db_doc.get("document_count", 0),
-            error_message=db_doc.get("error_message"),
-        )
-
-    def get_successful(
-        self, source_id: UUID, revision: str, crawler_version: str
-    ) -> CrawlDomain | None:
-        db_doc = self._collection.find_one(
-            {
-                "source_id": str(source_id),
-                "revision": revision,
-                "crawler_version": crawler_version,
-                "status": CrawlStatus.SUCCESS.value,
-            }
-        )
-        return self._to_domain(db_doc) if db_doc else None
-
-    def get_or_create(self, crawl: CrawlDomain) -> CrawlDomain:
-        crawl_data = CrawlMongoDocument(**crawl.model_dump(exclude={"id"})).to_mongo()
-        crawl_data.pop("status")
-        crawl_data.pop("error_message")
-        crawl_data.pop("completed_at")
-        db_doc = self._collection.find_one_and_update(
-            {
-                "source_id": str(crawl.source_id),
-                "revision": crawl.revision,
-                "crawler_version": crawl.crawler_version,
-            },
-            {
-                "$setOnInsert": crawl_data,
-                "$set": {
-                    "status": CrawlStatus.RUNNING.value,
-                    "error_message": None,
-                    "completed_at": None,
-                },
-            },
-            upsert=True,
-            return_document=ReturnDocument.AFTER,
-        )
-        return self._to_domain(db_doc)
-
-    def mark_succeeded(self, crawl_id: UUID, document_count: int) -> None:
-        self._collection.update_one(
-            {"_id": str(crawl_id)},
-            {
-                "$set": {
-                    "status": CrawlStatus.SUCCESS.value,
-                    "document_count": document_count,
-                    "completed_at": datetime.now(timezone.utc),
-                    "error_message": None,
-                }
-            },
-        )
-
-    def mark_failed(self, crawl_id: UUID, error_message: str) -> None:
-        self._collection.update_one(
-            {"_id": str(crawl_id)},
-            {
-                "$set": {
-                    "status": CrawlStatus.FAILED.value,
-                    "completed_at": datetime.now(timezone.utc),
-                    "error_message": error_message,
-                }
-            },
-        )
-
-
-class CodebaseCleanedMongoRepository(BaseCleanedRepository[CodebaseCleanedDomain]):
-    def __init__(self, client: MongoClient, db_name: str, target: str) -> None:
-        # 1. Initialize the specific MongoDB collection directly in memory
-        self._collection: Collection = client[db_name][target]
-
-    def exists_by_id(self, document_id: UUID) -> bool:
-        return self._collection.find_one({"_id": str(document_id)}) is not None
-
-    def save(self, document: CodebaseCleanedDomain) -> None:
-        db_doc = CodebaseCleanedMongoDocument(
-            id=document.id,
-            title=document.title,
-            content=document.content,
-            platform=document.platform,
-            source_url=document.source_url,
-            user_id=document.user_id,
-        )
-
-        self._collection.replace_one({"_id": str(db_doc.id)}, db_doc.to_mongo(), upsert=True)
-
-    def get_by_id(self, document_id: UUID) -> CodebaseCleanedDomain | None:
-        db_doc = self._collection.find_one({"_id": str(document_id)})
-        if db_doc:
-            return CodebaseCleanedDomain(
-                id=db_doc.get("_id", db_doc.get("id")),
-                title=db_doc["title"],
-                content=db_doc["content"],
-                platform=db_doc["platform"],
-                source_url=db_doc["source_url"],
-                user_id=db_doc["user_id"],
-            )
-        return None
+#     def get_by_id(self, document_id: UUID) -> CodebaseCleanedDomain | None:
+#         db_doc = self._collection.find_one({"_id": str(document_id)})
+#         if db_doc:
+#             return CodebaseCleanedDomain(
+#                 id=db_doc.get("_id", db_doc.get("id")),
+#                 title=db_doc["title"],
+#                 content=db_doc["content"],
+#                 platform=db_doc["platform"],
+#                 source_url=db_doc["source_url"],
+#                 user_id=db_doc["user_id"],
+#             )
+#         return None

@@ -3,7 +3,7 @@ from typing import Any, cast
 
 from vedika.application.interfaces.providers import BaseRepositoryProvider
 from vedika.application.interfaces.repositories import (
-    BaseCleanedRepository,
+    # BaseCleanedRepository,
     BaseCrawlRepository,
     BaseRawRepository,
     BaseRepository,
@@ -56,10 +56,10 @@ class RepositoryProvider(BaseRepositoryProvider):
     def get_raw_repository(self, category: DataCategory) -> BaseRawRepository:
         return cast(BaseRawRepository, self.get_repository(category=category, state=DataState.RAW))
 
-    def get_cleaned_repository(self, category: DataCategory) -> BaseCleanedRepository:
-        return cast(
-            BaseCleanedRepository, self.get_repository(category=category, state=DataState.CLEANED)
-        )
+    # def get_cleaned_repository(self, category: DataCategory) -> BaseCleanedRepository:
+    #     return cast(
+    #         BaseCleanedRepository, self.get_repository(category=category, state=DataState.CLEANED)
+    #     )
 
     def _build_mongo_repository(self, repository_class: type, connection: str, target: str):
         if self._mongo_connector:

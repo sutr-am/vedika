@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 from uuid import UUID
 
-from vedika.domain.cleaned import BaseCleanedDomain
+# from vedika.domain.cleaned import BaseCleanedDomain
 from vedika.domain.raw import BaseRawDomain
 from vedika.domain.sources import CrawlDomain, SourceDomain
 from vedika.domain.users import UserDomain
@@ -11,34 +11,12 @@ from vedika.domain.users import UserDomain
 # A generic type that is of DocumentDomain or its subclass
 RawT = TypeVar("RawT", bound=BaseRawDomain)
 UserT = TypeVar("UserT", bound=UserDomain)
-CleanT = TypeVar("CleanT", bound=BaseCleanedDomain)
+# CleanT = TypeVar("CleanT", bound=BaseCleanedDomain)
 
 
 class BaseUserRepository(Generic[UserT], ABC):
     @abstractmethod
-    def get_or_create_user(self, first_name: str, last_name: str) -> UserT:
-        pass
-
-
-class BaseRepository(ABC):
-    pass
-
-
-class BaseRawRepository(Generic[RawT], BaseRepository):
-    @abstractmethod
-    def exists_by_url(self, url: str) -> bool:
-        pass
-
-    @abstractmethod
-    def save(self, document: RawT) -> None:
-        pass
-
-    @abstractmethod
-    def replace_crawl_documents(self, crawl_id: UUID, documents: list[RawT]) -> None:
-        pass
-
-    @abstractmethod
-    def get_all(self) -> list[RawT]:
+    def get_or_create_user(self, first_name: str, last_name: str) -> UserT | None:
         pass
 
 
@@ -50,13 +28,17 @@ class BaseSourceRepository(ABC):
 
 class BaseCrawlRepository(ABC):
     @abstractmethod
-    def get_successful(
+    def get_or_create(self, crawl: CrawlDomain) -> CrawlDomain:
+        pass
+
+    @abstractmethod
+    def get_successful_crawl(
         self, source_id: UUID, revision: str, crawler_version: str
     ) -> CrawlDomain | None:
         pass
 
     @abstractmethod
-    def get_or_create(self, crawl: CrawlDomain) -> CrawlDomain:
+    def mark_running(self, crawl_id: UUID) -> None:
         pass
 
     @abstractmethod
@@ -68,15 +50,46 @@ class BaseCrawlRepository(ABC):
         pass
 
 
-class BaseCleanedRepository(Generic[CleanT], BaseRepository):
+###############################################
+
+
+class BaseRepository(ABC):
+    pass
+
+
+class BaseRawRepository(Generic[RawT], BaseRepository):
     @abstractmethod
-    def exists_by_id(self, document_id: UUID) -> bool:
+    def save(self, document: RawT) -> None:
+        """Save a particular document"""
         pass
 
     @abstractmethod
-    def save(self, document: CleanT) -> None:
+    def has_crawl_documents(self, crawl_id: UUID, expected_count: int) -> bool:
+        """
+        Returns whether the number of crawled documents
+        is same as expected_count for a particular crawl
+        """
         pass
 
     @abstractmethod
-    def get_by_id(self, document_id: UUID) -> CleanT | None:
+    def replace_crawl_documents(self, crawl_id: UUID, documents: list[RawT]) -> None:
+        """Replace all previously crawled documents with the new list of cralwed docs"""
         pass
+
+    @abstractmethod
+    def get_all(self) -> list[RawT]:
+        pass
+
+
+# class BaseCleanedRepository(Generic[CleanT], BaseRepository):
+#     @abstractmethod
+#     def exists_by_id(self, document_id: UUID) -> bool:
+#         pass
+
+#     @abstractmethod
+#     def save(self, document: CleanT) -> None:
+#         pass
+
+#     @abstractmethod
+#     def get_by_id(self, document_id: UUID) -> CleanT | None:
+#         pass

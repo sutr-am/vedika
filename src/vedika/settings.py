@@ -96,6 +96,8 @@ class StorageRouteConfig(BaseModel):
         # Validate user route
         if self.users.connection not in all_connections:
             raise ValueError(f"User route references unknown connection: {self.users.connection}")
+
+        # validate source & crawl routes
         for route_name, route in (("source", self.sources), ("crawl", self.crawls)):
             if route.connection not in all_connections:
                 raise ValueError(

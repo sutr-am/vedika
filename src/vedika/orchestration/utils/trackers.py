@@ -43,13 +43,14 @@ class UserMetadataTracker:
     def __init__(self):
         self._metadata: UserMetadata | None = None
 
-    def record(self, user: UserDomain) -> None:
-        self._metadata = UserMetadata(
-            query=UserQueryMetadata(user_full_name=user.full_name),
-            retrieved=RetrievedUserMetadata(
-                user_id=str(user.id), first_name=user.first_name, last_name=user.last_name
-            ),
-        )
+    def record(self, user: UserDomain | None) -> None:
+        if user:
+            self._metadata = UserMetadata(
+                query=UserQueryMetadata(user_full_name=user.full_name),
+                retrieved=RetrievedUserMetadata(
+                    user_id=str(user.id), first_name=user.first_name, last_name=user.last_name
+                ),
+            )
 
     @property
     def full_metadata(self) -> dict:

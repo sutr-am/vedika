@@ -3,5 +3,5 @@ parameters:
     user_first_name: "user"
     user_last_name: "two"
     links:
-        - "https://github.com/imflash217/portfolio"
-        - "https://github.com/imflash217/flash_rag"
+        - https://github.com/imflash217/portfolio
+        - https://github.com/imflash217/flash_rag

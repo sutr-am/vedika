@@ -11,7 +11,7 @@ from vedika.settings import get_settings
 
 
 @step
-def get_or_create_user(first_name: str, last_name: str) -> Annotated[UserDomain, "users"]:
+def ensure_user(first_name: str, last_name: str) -> Annotated[UserDomain | None, "users"]:
     # 1. Bootstrap the application
     settings = get_settings()
     container = ApplicationContainer(settings=settings)

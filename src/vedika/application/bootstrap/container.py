@@ -7,12 +7,38 @@ from vedika.settings import Settings
 
 
 class ApplicationContainer:
+    """
+    This the main app-container which hosts various assets
+    necessary for differnt parts of the application.
+    """
+
     def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+
+        ############# ASSETS ##########################
+        #############
+        # The mongo connector (used to query, fetch, dump data to/from DB)
         self.mongo_connector = MongoDatabaseConnector(settings=settings)
+
+        # The repository provider which gives various repositories
+        # for saving different types of users, cralwed data
         self.repository_provider = RepositoryProvider(
             settings=settings, mongo_connector=self.mongo_connector
         )
-        self.crawler_router = build_crawler_router(github_token=settings.github_token)
-        self.crawler_service = CrawlerService(
-            crawler_router=self.crawler_router, repository_provider=self.repository_provider
-        )
+
+        ############# The Services ##########################
+        self._crawler_service: CrawlerService | None = None  # Crawling Service
+
+        ############# The Cleaning Service ##########################
+        ############# The Chunking Service ##########################
+        ############# The Embedding Service ##########################
+        ############# The Retrieving Service ##########################
+
+    @property
+    def crawler_service(self) -> CrawlerService:
+        if self._crawler_service is None:
+            router = build_crawler_router(settings=self.settings)
+            self._crawler_service = CrawlerService(
+                crawler_router=router, repository_provider=self.repository_provider
+            )
+        return self._crawler_service

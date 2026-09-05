@@ -1,0 +1,86 @@
+@startuml vedika_architecture
+!pragma layout smetana
+allowmixing
+skinparam linetype polyline
+skinparam packageTitleAlignment center
+skinparam ArrowMessageAlignment center
+skinparam ArrowFontName Arial
+
+' ==============================================================================
+' GLOBAL LAYOUT & SPACING
+' ==============================================================================
+skinparam nodesep 20
+skinparam ranksep 20
+
+<style>
+package {
+    Padding 8
+}
+class {
+    Padding 8
+}
+interface {
+    Padding 8
+}
+package<<System>> {
+    LineStyle 2
+    LineColor #000
+    BackgroundColor transparent
+    Margin 20
+}
+package {
+    Padding 8
+    LineColor #000
+}
+arrow {
+    LineThickness 2
+    LineColor #000
+    FontColor #000
+    FontSize 12
+}
+</style>
+
+class UserDomain {
+    + id: UUID
+    + first_name: str
+    + last_name: str
+    + full_name: str
+    * category: DataCategory.USERS
+}
+
+class SourceDomain {
+    + id: UUID
+    + user_id: str
+    + provider: str
+    + canonical_url: HttpUrl
+}
+
+class CrawlDomain {
+    + id: UUID
+    + source_id: UUID
+    + requested_url: HttpUrl
+    + canonical_url: HttpUrl
+    + selected_ref: str
+    + revision: str
+    + crawler_version: str
+    + status: CrawlStatus
+    + document_count: int
+    + error_message: str
+    + started_at: datetime
+    + completed_at: datetime
+}
+
+class BaseRawDomain {
+    + id: UUID
+    + source_id: UUID
+    + crawl_id: UUID
+    + title: str
+    + content: str
+    + platform: str
+    + source_url: HttpUrl
+}
+
+' -----------------------------
+
+UserDomain "1" --> "*" SourceDomain: owns
+SourceDomain "1" --> "*" CrawlDomain: snapshots

@@ -2,19 +2,19 @@
 from typing import TypeAlias
 
 from vedika.application.interfaces.repositories import (
-    BaseCleanedRepository,
+    # BaseCleanedRepository,
     BaseRawRepository,
     BaseUserRepository,
 )
 from vedika.domain.types import DataCategory, DataState
 from vedika.infrastructure.db.mongo.repositories import (
-    CodebaseCleanedMongoRepository,
+    # CodebaseCleanedMongoRepository,
     CodebaseRawMongoRepository,
     UserMongoRepository,
 )
 
 Repository: TypeAlias = (
-    type[BaseUserRepository] | type[BaseRawRepository] | type[BaseCleanedRepository]
+    type[BaseUserRepository] | type[BaseRawRepository]  # | type[BaseCleanedRepository]
 )
 
 RepositoryKey: TypeAlias = tuple[DataCategory, DataState | None, str]
@@ -22,5 +22,5 @@ RepositoryKey: TypeAlias = tuple[DataCategory, DataState | None, str]
 REPOSITORY_REGISTRY: dict[RepositoryKey, Repository] = {
     (DataCategory.USERS, None, "mongo"): UserMongoRepository,
     (DataCategory.CODEBASES, DataState.RAW, "mongo"): CodebaseRawMongoRepository,
-    (DataCategory.CODEBASES, DataState.CLEANED, "mongo"): CodebaseCleanedMongoRepository,
+    # (DataCategory.CODEBASES, DataState.CLEANED, "mongo"): CodebaseCleanedMongoRepository,
 }
